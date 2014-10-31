@@ -1,0 +1,68 @@
+If you're reading this, you're one of the "lucky" people who have agreed
+to help me test MONOTONE, the tracker for extremely simple sound
+devices.  This alpha release of MONOTONE is lacking many features, but
+it has a bare minimum of editor commands and effects to compose simple
+tunes.  The manual, also a work in progress, can be viewed via
+monotone.txt or printed via monotone.rtf.  If you'd like to see MONOTONE
+in action before diving in, consult http://www.vimeo.com/825647 for a
+quick demo.
+
+Miscellanous MONOTONE concepts you should be aware of:
+
+- Notes sound until they are turned off.  Enter OFF "notes" to do this.
+
+- Note entry is based on Protracker (ie. z=C-4, s=C#4, etc.).  Tracker
+movement and commands are *not*, however.  I've chosen what I think is a
+logical keyboard definition for PCs, but if you don't like it, run
+MTCONFIG.EXE to reconfigure the keys.  It is a clunky utility, but it
+gets the job done.
+
+- Protracker is based on a 1/50th of a second timebase.  MONOTONE is
+based on a 1/60th of a second timebase.  That means it is slightly
+"faster" than Protracker.  This was intentional (playback routine allows
+copper effects on CGA this way) and is not a bug.  You will have to
+adjust :-)
+
+- The cursor lands on notes only.  There are many reasons for this but I
+won't go into them here.  To enter effects or pattern orders, use the
+"Enter" functionality (convienently defaults to the ENTER key).  To
+erase, use "Erase" function (defaults to CTRL-ENTER).  I know this
+sounds incredibly retarded but do it a few times and you'll see I wasn't
+totally insane.
+
+- All numeric entry is in 2-digit hex.  So if you want to pattern break
+to row 32, you enter D20 (20 hex = 32 decimal).  If you want to set a
+speed of "5", you enter F05.
+
+Testing notes:
+
+- Default helpscreen key is F1, but not everything is listed there.
+KEYLIST.TXT has full list of commands.  Print it out for a handy
+reference.  If you redefine keys and keep forgetting them, you can use
+MTCONFIG to regenerate the KEYLIST.TXT file.
+
+- Don't pick "True CGA" unless you really are on a true CGA monitor.
+
+- MONOTONE documentation is incomplete, but it couldn't hurt to read it
+anyway.
+
+- Only effects working in the alpha are Fxx (set speed), Bxx (pattern
+jump), and Dxx (pattern break).
+
+- If you're testing MONOTONE on a 4.77MHz machine, don't start a song or
+pattern playing while on the Tracker screen.  Switch to the status
+screen instead.  (The tracker screen repainting routine is not optimized
+yet and is slow enough that it affects playback on really slow machines.)
+
+- If the speaker is driving your roommate/wife/etc. crazy, run MONOTONE
+in DOSBox.  The emulated output will go through your soundcard and you
+can wear headphones.
+
+- "understa.mon" is 4-track tune.  It's included mostly so you
+can see how orders work.  "FF" is "end of song".  Use "tab" to switch
+back and forth on the tracker screen.  Others are included as well.
+
+Known bugs:
+
+- When you find some, please reply to the monotone mailing list at
+monotone@oldskool.org...

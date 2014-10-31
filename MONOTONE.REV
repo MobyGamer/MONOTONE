@@ -1,0 +1,106 @@
+Legend:
++ Added feature
+- Bugfix
+* Optimization or other Miscellany
+
+------------------------------------------------- 20080601: alpha 0.35
+
+  * Got really tired of the sluggish pattern editor performance when
+    trying to write a 4-track tune and spent another 6 hours converting
+    string operations in the pattern repaint routine to highly-optimized
+    assembler.  Navigating a pattern is now tolerable, although it's still
+    not as snappy as if I weren't forced through some OOP inefficiency.
+  + Added Tandy/PCjr 3-voice support.  No volume or noise channel yet.
+
+------------------------------------------------- 20080526: alpha 0.34
+
+  + Implemented Vibrato (4xy).  MONOTONE has reached it's milestone
+    for effect support.
+  - Had CGA profiling forced on -- this might or might not have caused
+    crashes on non-CGA machines, sorry!  This build has all profiling
+    turned off.
+
+------------------------------------------------- 20080525: alpha 0.33
+
+  + Implemented effect Portamento To Note (3xy).
+  + Implemented effect Arpeggio (0xy).
+  + Implemented effect Slide Up (1xx).
+  + Implemented effect Slide Down (2xx).
+  - Fixed PC speaker and Adlib not shutting down properly.
+  - Rewrote the PC speaker code so that it performs the timer reconfig
+    in a lot less steps if the speaker is already sounding.  This was
+    necessary because implementing slides/portamentos (see above) showed
+    that the speaker sound was not very smooth as the code was turning
+    the speaker and timer completely off and on between each tick.
+  * Spent 8 hours optimizing; player engine is now 40% faster and pattern
+    display repaint is now 20% faster.  (On 4.77Mhz machines, this kind
+    of optimization matters!)
+  * Doubled the size of the manual by adding information in all areas.
+    Still unfinished though.
+  * Distribution now includes the manual in two formats:  monotone.txt,
+    which is the manual formatted for on-screen display as well as any
+    dot-matrix or daisywheel printer that supports BS (backspace) and
+    FF (form feed), and monotone.rtf, for laser or inkjet printers.
+  * Optimized keyboard handling for slightly better speed and smaller
+    code.
+
+------------------------------------------------- 20080503: alpha 0.32
+
+  + Adlib support added!  But I want to remind everyone that MONOTONE
+    is a tracker for SIMPLE output devices, so the Adlib is not going
+    to have additional features over any other device.  In fact, just
+    to hammer that point home, the default timbre I am using is that
+    of a PC speaker.  So Adlib sounds just like... 9 PC speakers.
+  * Rewrote and expanded 80% of the documentation (monotone.rtf)
+
+------------------------------------------------- 20080416: alpha 0.31
+
+  - Using Dxx in the last pattern in a song no longer jumps to a random
+    location
+  * Ripped out all the "with (var) do..." blocks because they were
+    causing the compiler to make some strange optimizations.  Program
+    now 300 bytes larger but player calc engine is 30-50 ms faster.
+    This is a direct contradiction to what the manual says :-(
+    (it reduces redundant pointer loads, but why is it slower?)
+
+------------------------------------------------- 20080415: alpha 0.3
+
+  - Pattern play now loops properly.
+  - Song play now deposits you at the end of the song and not into outer
+    space.
+  - Paste Pattern now copies effects as well as notes (whoops!)
+  - Pattern Break and Pattern Jump actually work now (whoops!)
+  * Added the famous rickroll.mon by virt
+
+------------------------------------------------- 20080330: alpha 0.2
+
+  + Added a "visible bell" as confirmation that a "mark" action took place.
+  + Hitting "end" in order list moves to end of defined orders (used to go
+    all the way to the bottom of order list).
+  + Added effects Position Jump (Bxx) and Pattern Break (Dxx) "Thanks"
+    to Phoenix for asking for these, because they caused a 12-hour rewrite
+    of the engine to emulate all of Protracker's quirks.  The upside is that
+    Bxx and Dxx on the same line should work *exactly* like PT does, in case
+    you have some need to jump to a very specific place in the song (ie.
+    B02 and then D20 goes to row 20 in the pattern pointed to by order 2.)
+    Thanks, Protracker, for having so many idiotic quirks and bugs!
+    (Now you know why Grind doesn't pattern/order break properly.)
+  - Rewrote ~80% of timer handling and 100% of speaker handling functions.
+    This eliminates the need for the CRT unit and the "Runtime Error 200" bug.
+  - PlaySong now always starts playing from the very beginning of the song
+    (it would sometimes get confused and play from the current order downward).
+  - "Stop" did not turn off song-playing mode (ie. it would still follow
+    the orders list).  Fixed.
+  - Pasting a pattern now properly repaints the screen.
+  - Fixed bug in TMTSong.GetEffect that could have affected playback
+  - Adjusted the PC Speaker object to retrigger on tick 0.  This has the
+    benefit of eliminating the "swing tempo" effect heard in some songs where
+    the speed + number of virtual channels = odd number, but the drawback
+    that every virtual channel will no longer be guaranteed to sound. Since
+    unwanted swing tempos are more irritating than not being able to hear
+    a fake channel, I doubt anyone will want to go back to the old behavior.
+  * Loading and saving stop the player engine to avoid potential corruption.
+  * Included TEST.MON and PRELUDE.MON from yesso.  Thanks yesso!
+  * Sped up TMTPlayer significantly by unpacking the song data locally
+  * PlayPattern is currently "broken" and plays in "song" mode.  I should
+    have that fixed by the next version.

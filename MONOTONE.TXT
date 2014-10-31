@@ -1,0 +1,728 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                     MONOTONE                                     MONOTONE
+             A tracker for extremely simple output devices on the PC
+
+                          A Trixter / Hornet Production
+                   "On the Leading Edge of the Trailing Edge!"                   ___________________________________________
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     (Note: This documentation is still unfinished.  While I've tried to only
+     document features that are actually working, it is possible a few things
+     mentioned here are either unfinished or completely absent.  Contact me
+     if you have any questions.)
+
+
+
+
+
+
+                                Table of Contents                                _________________
+
+     ---[Quickstart for the experienced tracker musician:    3
+     ---[Design and Concepts:                                3
+     ---[Composing with MONOTONE                             4
+         The Note system                                     4
+         Movement                                            5
+         Editing                                             5
+         Effects                                             5
+     ---[Implementation Details:                             7
+     ---[Known Limitations:                                  7
+     ---[Composing for simple sound devices:                 8
+         PC Speaker                                          8
+         Adlib / Sound Blaster                               8
+         Tandy/PCjr 3-voice                                  8
+         Creative Music System/Gameblaster 12-voice          8
+         Bank Street Music Writer card                       9
+     ---[Roadmap                                             9
+     ---[Contact Information                                11
+     ---[Special Thanks                                     11
+     ---[Useless tidbits and trivia                         11
+         Programming style and philosophy                   11
+         Tools and libraries used to develop MONOTONE       12
+         Sample song info                                   12
+         Display Musings                                    12
+     Appendix A: Configuring MONOTONE                       13
+     Appendix B: Decimal to Hexidecimal chart               14
+
+
+
+
+
+
+     ---[Quickstart for the experienced tracker musician:
+
+     If you already know what a tracker is, you can get started with just
+     this information:
+
+     Look at KEYLIST.TXT (the shipping keyboard configuration).  If you like
+     it, print out KEYLIST.TXT and use it as a reference.  If you don't like
+     it, run MTCONFIG and redefine keys to your liking.
+
+     Because MONOTONE was written to support simple devices, the interface
+     favors note entry over all other operations.  This means it probably
+     doesn't navigate like you are used to.  The shipping navigation scheme
+     is this:
+
+          - Left hand on letter keys to enter notes
+          - Right hand on numeric keypad to move around and change the
+          default octave
+          - Moving left/right immediately moves to the prev/next track's note
+          entry
+
+     With this scheme, you can enter the bulk of the song (the note data)
+     with single keystrokes (no shift/ctrl/etc.) and without moving your
+     hands from their default positions.
+
+     ---[Design and Concepts:
+
+     MONOTONE is a tracker.  For those unfamiliar with trackers, a tracker is
+     a song editor/player that lets you compose a song by entering notes and
+     effects into a "pattern" made up of rows and columns.  (Each column is
+     called a "track", hence the name.)  Patterns are then strung together by
+     an "order list" to make a complete song.
+
+     While several PC trackers already exist, MONOTONE was designed from the
+     ground up as a tracker for extremely simple sound devices (ie.
+     significantly less capabilities than Adlib/Sound Blaster cards or MIDI)
+     and platforms (ie. very old PCs, microcontrollers, etc.).  Until
+     MONOTONE, such devices have had no representation on the PC.
+
+     A "simple" sound device is one with the following characteristics:
+
+          - MUST produce sound (ie. a tone at a particular frequency)            MUST
+          - MAY have volume control            ___
+          - MAY have more than one hardware channel            ___
+          - MAY have one or more noise generators            ___
+
+
+
+
+
+
+     Sound devices which meet only the basic criteria include:
+
+          - The internal PC speaker
+          - Any simple sine/sawtooth/triangle/square wave generator
+
+     Sound devices which meet (and are generally limited to) all four
+     criteria that have appeared on the PC in one form or another include:
+
+          - Texas instruments SN76489 (IBM PCjr, Tandy 1000 series)
+          - Phillips SAA 1099 (Creative Music System/Game Blaster)
+          - General Instrument AY-3-8910 (Bank Street Music Writer card)
+
+     (While many other sound devices available on the PC can greatly exceed
+     these criteria, such as General MIDI or the Yamaha YM3812 (Adlib), they
+     are not the target audience for MONOTONE.  Using such devices is still
+     possible in MONOTONE, but none of their extended features will be
+     accessible.)
+
+     For maximum output device flexibility, all tracking is done against a
+     "virtual" sound device that matches one or more of the above criteria.
+     This is done by implementing a simple finite-state machine in software,
+     which takes the song data and processes it into virtual channels.  For
+     actual output, the virtual channel data is mapped to the hardware via
+     each hardware's software object.  This allows the song to sound as
+     consistent as possible across different hardware devices.
+
+     Because the hardware these devices are found on is usually quite limited
+     (IBM PCjr, Tandy 1000, x86 8-bit ISA clones, etc.), MONOTONE was
+     designed for maximum compatibility with that hardware.  This was quite
+     intentional -- what good is support for the IBM PCjr 3-voice sound chip
+     if the program itself won't run on an IBM PCjr?  To that end, MONOTONE's
+     minimum hardware and software requirements are:
+
+          - Any IBM PC or true compatible
+          - 128KB of RAM
+          - One floppy disk drive
+          - Color display (monochrome support will be in a future release)
+
+     ---[Composing with MONOTONE
+
+     The Note system
+
+     MONOTONE is calibrated to an equal temperament scale based on the 12th
+     root of 2; that is, it is identical to that of a piano, with middle A
+     tuned to 440Hz.  MONOTONE recognizes a note/octaves range of A0 through
+     C9, giving it roughly one more octave than a piano.
+
+     Notes are represented in MONOTONE -- and in most trackers -- by the note
+     followed by the octave.  For example, middle C (4th octave) is displayed
+     as "C-4".  If a note is sharp, it is displayed with a sharp symbol, for
+     example "C#4".  (Flats are not represented in most trackers, and as such
+     are not represented in MONOTONE.)
+
+
+
+
+
+
+     Movement
+
+     Note: All of the movement and editing in this document refers to the
+     default keyset included with MONOTONE.  You can reconfigure every key if
+     you like; see Appendix A for more details.
+
+     Movement in MONOTONE, like most trackers, follows basic user interface
+     principles:
+
+          - Arrow keys move to previous and next rows, and to previous and
+          next tracks
+          - PageUp/PageDown move to the top/bottom of a pattern
+          - Ctrl+PageUp/PageDown move to the previous/next pattern
+
+     Think of navigating a spreadsheet, and you'll be able to navigate
+     MONOTONE.
+
+     Editing
+
+     Block manipulation of music elements is done by first Mark the source
+     with ALT+M, then move to the destination and choose the action you want:
+
+          SwapTrack: Alt+S (Swaps the marked track to the current track)
+          PasteTrack: Alt+P (Pastes the marked track to the current track)
+          PastePattern: Alt+Ctrl+P (Pastes the marked pattern to the current
+          pattern)
+          (this section incomplete)
+
+     Effects
+
+     MONOTONE, like all trackers, gives you the ability to control the music
+     by adding one or more effects per row or per note.  Effects can do
+     things like speed up or slow down the music, slide a note slightly
+     higher up or down, or arpeggiate a note.
+
+     Effects are entered by moving to the note you wish to add an effect to
+     and hitting Ctrl+Enter.  You can enter one effect per note.  All effect                                                                  __________
+     data is entered in hexidecimal; this means that values from 0-9 are the     ______________________________
+     same, but 10-15 must be entered as A-F.  For those not familiar with
+     hexidecimal notation, see Appendix B.
+
+
+
+
+
+
+     The list of effects supported by the MONOTONE Version 1 file format are:
+
+     +-----------------------------------------------------------------------+
+      Effect           Form  Function      _______________________________     |                                                                       |
+     |-----------------------------------------------------------------------|
+      Arpeggiate       0xy   Arpeggiate quickly switches between three notes     |                                                                       |
+                             you specify, switching notes on every tick.     |                                                                       |
+                             "x" refers to the 2nd note interval in the     |                                                                       |
+                             triad, and "y" is the 3rd.  For example: If you     |                                                                       |
+                             wanted to arpeggiate a major C chord, you would     |                                                                       |
+                             add the effect 047 to a C note, and it would     |                                                                       |
+                             arpeggiate between C-E-G.  If you wanted a     |                                                                       |
+                             minor chord, you would use 037 for C-D#-E.     |                                                                       |
+     |-----------------------------------------------------------------------|
+      Portamento Up    1xx   Portamento Up slides a channel's frequency     |                                                                       |
+                             upwards by "xx" Hz per tick.  This is used more     |                                                                       |
+                             for special effects and less for actual     |                                                                       |
+                             portamento; for a more useful portamento, see     |                                                                       |
+                             Portamento To Note.     |                                                                       |
+     |-----------------------------------------------------------------------|
+      Portamento Down  2xx   Portamento Down slides a channel's frequency     |                                                                       |
+                             downwards by "xx" Hz per tick.  This is used     |                                                                       |
+                             more for special effects and less for actual     |                                                                       |
+                             portamento; for a more useful portamento, see     |                                                                       |
+                             Portamento To Note.     |                                                                       |
+     |-----------------------------------------------------------------------|
+      Port. To Note    3xx   When used with a note in the note column,     |                                                                       |
+                             Portamento To Note will slide upwards or     |                                                                       |
+                             downwards by "xx" Hz per tick until the target     |                                                                       |
+                             note is reached.  (When this effect is used,     |                                                                       |
+                             the player engine knows not to actually sound     |                                                                       |
+                             the note, but to remember it as the note to     |                                                                       |
+                             stop sliding to.).  Shortcuts: If the note or     |                                                                       |
+                             data value ("xx") is empty, the previous values     |                                                                       |
+                             will be used.  This allows you to specify the     |                                                                       |
+                             slide properly (ie. "D-4 305") and then just     |                                                                       |
+                             enter a shorter form if sliding is still needed     |                                                                       |
+                             (ie. "--- 300").     |                                                                       |
+     |-----------------------------------------------------------------------|
+      Vibrato          4xy   Vibrato will oscillate the current note by a     |                                                                       |
+                             certain speed ("x") and depth ("y").  The     |                                                                       |
+                             effect has been calibrated in the version 1     |                                                                       |
+                             file format so that the middle values (3 for     |                                                                       |
+                             speed and 3 for depth) result in a pleasing     |                                                                       |
+                             vibrato.  Each depth value is approximately 14     |                                                                       |
+                             cents, so using 7 for the depth will oscillate     |                                                                       |
+                             +/- one whole note.  Shortcuts: If the speed or     |                                                                       |
+                             depth values are empty ("0") then the previous     |                                                                       |
+                             values will be used.  This allows you to     |                                                                       |
+                             specify the vibrato once (ie. "--- 433") and     |                                                                       |
+                             then optionally enter a shorter form if to     |                                                                       |
+                             continue vibrato with previous values (ie. "---     |                                                                       |
+                             400").     |                                                                       |
+     +-----------------------------------------------------------------------+
+
+
+
+
+
+
+     +-----------------------------------------------------------------------+
+      Pattern Jump     Bxx   Jumps to order "xx" in the song.     |                                                                       |
+     |-----------------------------------------------------------------------|
+      Row Jump         Dxx   Jumps to row "xx" in the next pattern.  Special     |                                                                       |
+                             usage:  If you specify both Bxx (see above) and     |                                                                       |
+                             Dxx in the same row, then playback will jump to     |                                                                       |
+                             the exact point specified by Bxx and Dxx.  So     |                                                                       |
+                             if you wanted to jump directly to row 32 (hex:     |                                                                       |
+                             20) in order 11 (hex B), you can do that by     |                                                                       |
+                             putting B0B on one track and D20 in another     |                                                                       |
+                             track on the same row, and the jump will be     |                                                                       |
+                             made after the row is done playing.     |                                                                       |
+     |-----------------------------------------------------------------------|
+      Set Speed        Fxx   Sets the speed of the song to "xx" ticks per     |                                                                       |
+                             row.  You can set the speed on any note in any     |                                                                       |
+                             row, to alter the speed of the song as you     |                                                                       |
+                             like, as it is playing.     |                                                                       |
+     +-----------------------------------------------------------------------+
+
+     ---[Implementation Details:
+
+     MONOTONE differs from previous Amiga and PC trackers in a few ways,
+     mostly because it was designed from the ground up to be as hardware
+     "agnostic" as possible.  Some of these differences are because we are
+     not limited to the Amiga's legacy (hardware periods, etc.) and others
+     are because of a rethinking of how a tracker should be designed for a
+     low-resource PC:
+
+          - Full octave range (A0 to C9)
+          - Perfect equal temperament (ie. middle C is exactly middle C)                                                       exactly
+          - Pattern navigation is optimized for note entry, not data entry
+          - The Vibrato effect is done by going up/down by proper logrithmic
+          semitones and not linear frequencies
+
+     Despite these differences, the basic interface "concept" in MONOTONE
+     remains identical to most other trackers, with the exception that, for
+     consistency, all numerical data in MONOTONE is displayed and entered in
+     hexidecimal.
+
+     ---[Known Limitations:
+
+     The alpha release of MONOTONE has the following limitations:
+
+          - Device support currently limited to PC Speaker arpeggiator output
+          and Adlib
+          - Number of tracks limited to 4
+          - No support for monochrome cards/monitors
+
+     The complete feature list previously advertised will be implemented
+     incrementally in later builds.
+
+     For practical reasons, MONOTONE is limited to 12 total tracks regardless
+     of the actual hardware output device.  If you would like this increased,
+     and have a good reason for doing so :-) contact the author.
+
+
+
+
+
+
+     ---[Usage Tips:
+
+     If you want a particular keyboard combination and the keyboard config
+     utility isn't registering it, blame your keyboard BIOS.  For maximum
+     compatibility on PC clones, MONOTONE uses the BIOS keyboard routine for
+     input. Some combinations are simply not registered depending on the
+     clone BIOS.  (If it's any consolation, some keypresses aren't registered
+     by IBM's own XT BIOS! For example, keypad "5" all by itself isn't
+     processed, nor is Ctrl+Insert, nor Alt+Enter.)  If your keypress combo
+     isn't picked up by the utility, blame the BIOS and choose another.
+
+     The pattern "repaint" routine takes up enough CPU time that it
+     interferes with smooth playback on a 4.77MHz 8088.  If you're
+     experiencing "stuttery" playback in the pattern editor, switch to the
+     status screen (default key F3) before playing.  (Any 286 or later will
+     not have this problem.)
+
+     ---[Composing for simple sound devices:
+
+     PC Speaker     __________
+
+     - If targeting the PC Speaker, whether 1-voice or multivoice, try not to
+     sustain notes if it's not necessary.  The pc speaker is not good at
+     reproducing harmony, so as much time as you can give each invidual
+     channel is best.  (In other words, the more staccato the note, the
+     better the chance that other notes may be heard.)  If you *are* going to
+     sustain a note, consider giving it a little "flavor" by adding vibrato
+     where appropriate.
+
+     - Due to the nature of the "dominant channel" arpeggiator, the only way
+     each note will have a chance to be heard is if the speed is (numtracks)
+     or higher. For example, if you have three tracks with notes on them and
+     the tickspeed is set at 2 ticks, the first and second notes will sound
+     but the third won't because on the third tick the row is advanced.
+     Unless the third note was still sounding in the next row, it will never
+     have a chance to sound.
+
+     Adlib / Sound Blaster     _____________________
+
+     To hammer home the point that MONOTONE is specifically not a device-                                                            not
+     dependant tracker, I have programmed the Adlib's default instrument to
+     sound like a PC Speaker.  Enjoy the cacophony of 9 simultaneous PC
+     speakers.
+
+     Limitations:  The default .SBI instrument supplied with MONOTONE does
+     not sound properly past 3KHz.  This means you can compose up to 7
+     octaves with an Adlib, but not the full 9.  If you want the full 9
+     octaves, you will have to supply MONOTONE with a better-programmed
+     instrument.
+
+     Tandy/PCjr 3-voice     __________________
+
+     (not implemented yet)
+
+
+
+
+
+
+     Creative Music System/Gameblaster 12-voice     __________________________________________
+
+     (not implemented yet)
+
+     Bank Street Music Writer card     _____________________________
+
+     If you actually own one of these you can consider yourself one of the
+     luckiest people alive.  There is only one of these left in the world
+     documented by the vintage soundcard hobbyist community to still exist
+     (owned by me) -- if you have one, drop me a line!  The Bank Street Music
+     Writer card for PCs was bundled with Bank Street Music Writer for DOS;
+     if you never bought that program, you probably don't own one.  If you
+     do, however, you'll find it is essentially a "PC Mockingboard" built
+     around a GI AY-3-8913, which itself is a smaller pincount version of the
+     AY-3-8910.
+
+     ---[Roadmap
+
+     MONOTONE is still in development in what is tentatively called the
+     "version 1" branch.  "V1" is largely defined by the file format designed
+     for low-resource platforms, and to some degree, the young age of the
+     program.  The following is a list of features either completed or in
+     development for V1 of MONOTONE:
+
+          - 1-4 tracks
+          - 8 effects (portamento up, portamento down, portamento to note,
+          vibrato, arpeggio, pattern break, pattern jump, and set speed)
+          - Basic editing (track/pattern copy/move/erase/transpose)
+          - PC Speaker (low-resource arpeggiator), Adlib, and Tandy/PCjr
+          output devices
+          - Song format limited to 255 different patterns and 32K total note
+          "cells" (about 128 4-track patterns)
+          - Color screens (CGA, generic)
+          - Reconfigurable keyboard interface
+
+     Only when the complete feature set listed above has been implemented
+     will MONOTONE release with a "version 1.0" status.
+
+     Features planned for "version 2" include:
+
+          - More than 4 tracks (this is mainly held back by screen and speed
+          constraints)
+          - The ability to control volume, which leads to two additional
+          features:
+               - ADSR volume envelopes (attack, decay, sustain, release)
+          handled by the player engine.  Since this allows for the concept of
+          "instruments", an "instrument" editor will be created and the file
+          format and tracker altered to allow for "instrument" changes
+               - Support for 16 effects (essentially all 16 "base" Protracker
+          effects)
+          - More flexible parameters to effects (currently V1 is limited to 3
+          bits (0-7) per x/y or 6 bits (0-63) per whole number; I plan to
+          increase this to a full nybble (0-16) and byte (0-255)
+          respectively)
+
+
+
+
+
+
+          - Better editing (all previous functionality, but now applicable to
+          an arbitrary row range)
+          - True multi-channel PC Speaker output.  This might take up too
+          much CPU time on slow machines to be done in the tracker itself and
+          may require a standalone player.
+          - Support for monochrome monitors
+
+     I have many further ideas that, while they would be nice, I have not
+     committed to.  The following features may or may not see the light of
+     day:
+
+          - Descendant TSong objects to load MOD or S3M or XM (which also
+          means a descendant TPlayer object to play them
+          - Related to the above, and probably more practical, are file
+          format converters that would convert S3M/MOD/XM to .MON format.  I
+          have a very strong motivation to make one for S3M because there is
+          a particular tune by virt I would love to convert over...
+          - Converting MONOTONE to TurboVision for a consistent user
+          interface that supports windows and mouse control.  This would be
+          induce a truly massive speed hit to display updates on slow
+          machines, though.
+          - Better memory management of songs, because a 12-track song
+          shoehorned into 64K is only going to allow up to 42 different
+          patterns.  (Then again, maybe this isn't such a big deal.)
+          - Support for noise/percussion.  I'm not sure how to implement this
+          while still keeping in the spirit of MONOTONE, but I recognize how
+          cool it would be to have it.  I think the best way to do this would
+          be an extension to the "instrument" editor to allow for an
+          "instrument" to be either an ADSR envelope or a noise thing.
+          Exactly what "noise" parameters to support will probably be
+          determined by looking at the AY-3-8910, the TN SN76489, the
+          Phillips SAA 1099, and maybe the Adlib and seeing what noise
+          capabilities are common to them?
+          - Taking advantage of 80-column (and VESA 132-column) text modes.
+          While this would allow for more information on a single screen, it
+          would require undoing all of the speed optimizations I've put into
+          the current display routines.
+          - Format converters for non-tracker composition programs.  I've
+          composed or transcribed music for such PC programs as Pianoman,
+          Songwriter, Music Construction Set, Bank Street Music Writer, and
+          even the 3-voice BASIC PLAY statement.  Converting that music into
+          MONOTONE format would be awesome...
+
+     Finally, here is a list of features that I am not planning on
+     implementing unless I'm getting paid 4 figures or more to do so:
+
+          - Extensions for specific output device capabilities (like noise,
+          percussion, instrument changing, etc.).  Device-specific feature
+          support is contrary to the entire spirit of MONOTONE.
+          - Support for Impulse Tracker (.IT) files.
+
+
+
+
+
+
+     ---[Contact Information
+
+     I can be reached at trixter@oldskool.org.  However, if you'd like to
+     follow MONOTONE development and releases, subscribe to the MONOTONE
+     mailing list at http://list.oldskool.org/listinfo/monotone
+
+     ---[Special Thanks
+
+          Necros, for planting the seed
+          Jason B., for OOP help
+          yesso, for offering to be the first betatester
+          Phoenix / Hornet, for offering to be second betatester
+          FireLight, for protracker info
+          virt, for the mega-awesome 1-bit rickroll
+          Joe Snow / Nuclear Meltdown Productions, for tandy and adlib sample
+          code from a LONG way back (get in touch with me!)
+          Sketchcow, for the name and motivation
+          Spinsane / ACiD, for the mad wicked ANSI
+
+     ---[Useless tidbits and trivia
+
+     Programming style and philosophy     ________________________________
+
+     100% of MONOTONE's code and documentation was programmed on a real IBM
+     PC/XT with CGA.  At no point did I "cheat" and program on a modern
+     platform, not even just to write documentation.  This was quite
+     intentional, to firmly cement myself into the mindset of my target
+     audience.  The rationale was, if I coded on the lowest target hardware,
+     then surely I couldn't write sloppy code -- if the code ran acceptably
+     on the slowest machine in the target audience, then it would run
+     brilliantly on all other machines.  This has largely proven to be true
+     :-)
+
+     This practice had an interesting side-effect of returning to dawn-of-
+     personal-computing programming forms:  Instead of rapid-fire development
+     and testing, like we do today, I found myself thinking and planning way
+     ahead into the future.  (Not just to the next hour of coding, but to the
+     next few years of coding.)  This was no doubt a side-effect of losing              _____
+     the luxury of a fast compiler; since it took 3+ minutes to recompile the
+     entire program (something that happened once or twice an hour in the
+     early stages), I was reluctant to code a section unless I was sure it                                                                   sure
+     was going to work.
+
+     One thing that hampered development was the decision to go object-
+     oriented.  This was this my first real OOP exercise, which slowed the
+     process to a crawl as I reinvented things like design patterns and
+     message passing.  But much worse was the sheer act of attempting OOP on
+     a severely limited target platform (4.77MHz 8088).  OOP's flexibility
+     and extensibility comes at the "small" price of nearly triple the
+     pointer loads and memory accesses of traditional procedural code.  For
+     some platforms, this is not a big deal, but the 8088 takes four cycles
+     to access a single byte of memory (not to mention that its address
+     calculations can tack on up to 12 additional cycles).  On modern
+
+
+
+
+
+
+     machines that run at 3 GHz or more, these may seem like trivial
+     concerns, but believe me, they add up on this slow piece of crap!
+
+     BTW: Although it doesn't sound like, it, the term "slow piece of crap"
+     is an endearing one.  I have a lot of love for this machine.  Although
+     it wasn't my first PC (that honor goes to the AT&T PC 6300), it has
+     definitely become my most favorite over the last 20 years.  I've gotten
+     extremely familiar with the PC/XT's timings and operation, and am
+     confident that, given some thought, I could make it do anything I wanted
+     to.  (Search for "8088 Corruption" for a prior experiment.)
+
+     While it wasn't intentional, I've also gotten very familiar with how
+     Turbo Pascal 7 generates code, and have tried to balance source code
+     tricks with readability.
+
+     Tools and libraries used to develop MONOTONE     ____________________________________________
+
+          - Turbo Pascal 7.0 (language, compiler, IDE)
+          - Aurora (text editing)
+          - Microsoft Word for DOS v5.5 (documentation)
+          - SBTIMBRE (Adlib timbre experimentation)
+          - TheDraw (ANSI handling)
+          - Michael Abrash's Zen Timer (profiling)
+
+     Sample song info     ________________
+
+     The song "yesso.mon" was the first song ever written in MONOTONE by
+     someone other than the author.
+
+     The song "rickroll.mon" was tracked by virt in about 30 minutes after
+     about only 90 seconds of showing him MONOTONE and how it worked.  He
+     tracked it directly on my PC/XT.  This is notable not only because of
+     how fast he tracked it, but of how he was able to adapt to a tracker he
+     had never seen before.  I have largely that tune to thank for getting as
+     many points as I did in the Block Party 2008 Wild Compo.
+
+     Display Musings     _______________
+
+     The opening ANSI was done the old-fashioned way:  Contacting the head of
+     ACiD (RaD MaN) and commissioning an artwork.  I then received the final
+     product with a note, "Is this satisfactory?"  For 2008, this was all in
+     grand tradition:  The requestor doesn't know who the artist is until the
+     artwork has been received, and all communication and requests go through
+     the group liason.  The process was a fun return to early 1990's form.
+
+     If you have a true CGA card, your "visual bell" is done via colors in
+     the overscan border.  This little trick currently only works on a real
+     CGA card and does not show up in any emulator (as of 2008).  For a                       ___
+     visual bell using the "generic" video driver, I invert the screen
+     briefly by flipping all of the attribute bits.
+
+
+
+
+
+
+     Appendix A: Configuring MONOTONE
+
+     MONOTONE's default keyset can be completely reconfigured using the
+     MTCONFIG.EXE utility included with MONOTONE.  MTCONFIG.EXE will load the
+     keyset from DEFAULT.KEY file and allow you to make changes before saving
+     it back.
+
+     If you don't like your custom keyset and want to revert back to the
+     default keyset, simply delete DEFAULT.KEY and then re-run MTCONFIG.
+     MTCONFIG will re-create the default keyset when it notices it missing.
+
+     Note:  If you change the default keyset with MTCONFIG, keep in mind that
+     the keys listed in the documentation will obviously not match your
+     keys...
+
+
+
+
+
+
+     Appendix B: Decimal to Hexidecimal chart
+
+     Not everyone is a programmer, so here is a handy decimal-to-hexidecimal
+     chart for those having trouble getting effect parameters correct:
+
+     +----------------+
+      Decimal  Hex      ____________     |                |
+      0        0     |                |
+      1        1     |                |
+      2        2     |                |
+      3        3     |                |
+      4        4     |                |
+      5        5     |                |
+      6        6     |                |
+      7        7     |                |
+      8        8     |                |
+      9        9     |                |
+      10       A     |                |
+      11       B     |                |
+      12       C     |                |
+      13       D     |                |
+      14       E     |                |
+      15       F     |                |
+      16       10     |                |
+      17       11     |                |
+      18       12     |                |
+      19       13     |                |
+      20       14     |                |
+      21       15     |                |
+      22       16     |                |
+      23       17     |                |
+      24       18     |                |
+      25       19     |                |
+      26       1A     |                |
+      27       1B     |                |
+      28       1C     |                |
+      29       1D     |                |
+      30       1E     |                |
+      31       1F     |                |
+      32       20     |                |
+     +----------------+
+
+     ...etc.  Hopefully by now you can see the pattern, and can work out the
+     rest on your own.
