@@ -200,7 +200,7 @@ begin
       case descriptions[uloop].act of
         goTrackerScreen,goHelpScreen,goStatusScreen,
         noteOff,eraseNote,octaveup,octavedown,
-        playPattern,playSong,stopPlaying,mark,pastetrack,
+        playPattern,playSong,stopPlaying,mark,pastetrack,pastePattern,
         Enter,Erase,
         transup,transdown,
         loadsong,savesong,quit:begin
@@ -997,6 +997,16 @@ begin
 
         mark:ClipBoard:=MySong^.CurrentLoc;
         pastetrack:begin
+          temploc:=MySong^.CurrentLoc;
+          for rowloop:=0 to maxRows-1 do begin
+            MySong^.MoveTo(MySong^.CurrentLoc.pattern,MySong^.CurrentLoc.track,rowloop);
+            MySong^.SetNote(MySong^.GetNoteAbsolute(clipboard.pattern,clipboard.track,rowloop));
+            tempeffect:=MySong^.GetEffectAbsolute(clipboard.pattern,clipboard.track,rowloop);
+            MySong^.SetEffect(hi(tempeffect), (lo(tempeffect) AND $f0) shr 4, lo(tempeffect) AND $0f);
+          end;
+          MySong^.CurrentLoc:=temploc;
+        end;
+        pastePattern:begin
           temploc:=MySong^.CurrentLoc;
           for rowloop:=0 to maxRows-1 do begin
             for trackloop:=0 to MySong^.numTracks-1 do begin
