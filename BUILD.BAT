@@ -9,5 +9,5 @@ copy \compiled\mt.exe .
 copy \compiled\mtconfig.exe .
 del c:\temp\mt_a036.zip
 pkzip -es -P c:\temp\mt_a036.zip @manifest.txt
-del mt.exe
-del mtconfig.exe
+rem del mt.exe
+rem del mtconfig.exe
