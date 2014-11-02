@@ -298,6 +298,10 @@ begin
 (*      MyOutput:=new(PPCSpeakerSimple,Init(MyPlayer,true)); equalsharetru*)
       MyOutput:=new(PPCSpeakerSimple,Init(MyPlayer,false));
     end;
+    PITDW:begin
+(*      MyOutput:=new(PPCSpeakerSimple,Init(MyPlayer,true)); equalsharetru*)
+      MyOutput:=new(PPCSpeakerSimpleDW,Init(MyPlayer,false));
+    end;
     YM3812:begin
       MyOutput:=new(PYM3812,Init(MyPlayer));
     end;

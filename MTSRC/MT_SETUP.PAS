@@ -25,6 +25,11 @@ const
 
   auds:AudioLabels=(
     (supported:true ;DescString:'8253 PIT:         Internal PC Speaker          1-4 voices'),
+    {$IFDEF PITDEVS}
+    (supported:true ;DescString:'8253 PIT diskwriter, PIT divisor values        1-4 voices'),
+    {$ELSE}
+    (supported:true ;DescString:'8253 PIT diskwriter, frequency values          1-4 voices'),
+    {$ENDIF}
     (supported:false;DescString:'CPU PIT EMU:      Internal PC Speaker            2 voices'),
     (supported:false;DescString:'CPU PIT EMU:      Internal PC Speaker            3 voices'),
     (supported:false;DescString:'CPU PIT EMU:      Internal PC Speaker            4 voices'),

@@ -7,6 +7,9 @@ monotone.txt or printed via monotone.rtf.  If you'd like to see MONOTONE
 in action before diving in, consult http://www.vimeo.com/825647 for a
 quick demo.
 
+Most recent version is always at github; look for MONOTONE in
+MobyGamer's repo.
+
 Miscellanous MONOTONE concepts you should be aware of:
 
 - Notes sound until they are turned off.  Enter OFF "notes" to do this.
@@ -25,7 +28,7 @@ adjust :-)
 
 - The cursor lands on notes only.  There are many reasons for this but I
 won't go into them here.  To enter effects or pattern orders, use the
-"Enter" functionality (convienently defaults to the ENTER key).  To
+"Enter" functionality (conveinently defaults to the ENTER key).  To
 erase, use "Erase" function (defaults to CTRL-ENTER).  I know this
 sounds incredibly retarded but do it a few times and you'll see I wasn't
 totally insane.

@@ -2,6 +2,12 @@ Legend:
 + Added feature
 - Bugfix
 * Optimization or other Miscellany
+------------------------------------------------- 20080601: alpha 0.37
+
+  - Diskwriter added for speaker output.  Compile with PITDEVS for PIT
+    timer value output, or without for frequency output.  Writes to
+    "output.pit" or "output.frq".
+
 ------------------------------------------------- 20080601: alpha 0.36
 
   - PasteTrack works.  PastePattern also works.

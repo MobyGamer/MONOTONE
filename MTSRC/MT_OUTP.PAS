@@ -117,6 +117,18 @@ type
     dominantChannel:byte; {see above; rotates on every tick}
   end;
 
+  {diskwriter version of speaker output device}
+  PPCSpeakerSimpleDW=^TPCSpeakerSimpleDW;
+  TPCSpeakerSimpleDW=object(TPCSpeakerSimple)
+    constructor Init(playerHookProc:PPlayerEngine;equal:boolean);
+    destructor Done; virtual;
+    Procedure hookPlayer(pfreq:word); virtual; {Hook the player proc to fire at the specified frequency}
+    Procedure unHookPlayer; virtual;
+    Procedure setAllChannels; virtual; {calls player hook, then sets all the channels}
+    private
+    fhandle:file of word;
+	end;
+
   PYM3812=^TYM3812;
   TYM3812=object(TOutputDevice)
     constructor Init(playerHookProc:PPlayerEngine);
@@ -684,5 +696,86 @@ begin
   end;
   {$IFDEF CGA_PROFILE} asm MOV AL,tBlack; MOV DX,03D9h; OUT DX,AL; end; {$ENDIF}
 end;
+
+
+Constructor TPCSpeakerSimpleDW.Init;
+begin
+  Inherited Init(playerHookProc,equal);
+  {$IFDEF PITDIVS}
+  assign(fhandle,'output.pit');
+  {$ELSE}
+  assign(fhandle,'output.frq');
+  {$ENDIF}
+  rewrite(fhandle);
+end;
+
+Destructor TPCSpeakerSimpleDW.Done;
+begin
+  close(fhandle);
+  Inherited Done;
+end;
+
+Procedure TPCSpeakerSimpleDW.hookPlayer;
+begin
+  Inherited hookPlayer(pfreq);
+end;
+
+Procedure TPCSpeakerSimpleDW.unHookPlayer;
+begin
+  Inherited unHookPlayer;
+end;
+
+Procedure TPCSpeakerSimpleDW.setAllChannels;
+var
+  b:byte;
+  w:word;
+  activeCount:byte;
+begin
+  {$IFDEF CGA_PROFILE} asm MOV AL,tLightBlue; MOV DX,03D9h; OUT DX,AL; end; {$ENDIF}
+  {If we're here, we've got a new slice of virtual channel data to
+  translate into real channel data (ie. calcAllChannels has already run).
+  Use virtual channel data to set real hardware.}
+
+  {When equalShare set, every channel is set/unset.  When unset, sound is
+  only terminated if all channels are not active.}
+  if phookproc^.vchannels[dominantChannel].active
+    {set a "channel"}
+    then begin
+      w:=phookproc^.vchannels[dominantChannel].frequency;
+      Chan2SquarewaveChange(w);
+      {$IFDEF PITDIVS}
+      w:=PITFreq div w;
+      {$ENDIF}
+      write(fhandle,w);
+    end
+    {stop sounding a "channel"}
+    else begin
+      if equalShare
+        then begin
+          w:=silent;
+          Chan2SquarewaveChange(w);
+          {$IFDEF PITDIVS}
+          w:=PITFreq div w;
+          {$ENDIF}
+          write(fhandle,w);
+        end
+        else begin
+          activeCount:=0;
+          for b:=0 to pHookProc^.numVChannels-1 do inc(activeCount,byte(pHookProc^.VChannels[b].active));
+          if activeCount=0 then Chan2SquarewaveChange(silent);
+        end;
+    end;
+
+  {rotate the "active" voice for our poor little PC speaker}
+  inc(dominantChannel);
+  if (dominantChannel > (phookproc^.numVChannels-1))
+  or (phookproc^.tickCount=0) {This added so that new row forces retrigger.
+  Retrigger is necessary because, without it, sound output takes on a "swing"
+  tempo as some channels get more time and some get less}
+    then dominantChannel:=0;
+
+  {$IFDEF CGA_PROFILE} asm MOV AL,tBlack; MOV DX,03D9h; OUT DX,AL; end; {$ENDIF}
+end;
+
 
 end.
