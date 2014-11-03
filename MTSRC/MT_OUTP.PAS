@@ -115,6 +115,7 @@ type
         only 1-2-3 are sounding, 3 sounds an extra tick and is more dominant)
     My advice?  Don't use equalshare.  It's too "bubbly".}
     dominantChannel:byte; {see above; rotates on every tick}
+    lastFreqWritten:word;
   end;
 
   {diskwriter version of speaker output device}
@@ -126,7 +127,9 @@ type
     Procedure unHookPlayer; virtual;
     Procedure setAllChannels; virtual; {calls player hook, then sets all the channels}
     private
-    fhandle:file of word;
+    fhandle:file;
+    freqarray:array[0..31000] of word;
+    numwritten:word;
 	end;
 
   PYM3812=^TYM3812;
@@ -254,6 +257,7 @@ begin
   {Initialize PC speaker device}
   Chan2SquarewaveOn(20); {burp to let people know we initialized}
   OMasterDevice:=@Self;
+  lastFreqWritten:=$ffff;
 end;
 
 Destructor TPCSpeakerSimple.Done;
@@ -293,15 +297,26 @@ begin
   only terminated if all channels are not active.}
   if phookproc^.vchannels[dominantChannel].active
     {set a "channel"}
-    then Chan2SquarewaveChange(phookproc^.vchannels[dominantChannel].frequency)
+    then begin
+      lastFreqWritten:=phookproc^.vchannels[dominantChannel].frequency;
+      Chan2SquarewaveChange(lastFreqWritten);
+    end
     {stop sounding a "channel"}
     else begin
       if equalShare
-        then Chan2SquarewaveChange(silent)
+        then begin
+          lastFreqWritten:=silent;
+          Chan2SquarewaveChange(lastFreqWritten);
+        end
         else begin
           activeCount:=0;
+          {count # of channels active}
           for b:=0 to pHookProc^.numVChannels-1 do inc(activeCount,byte(pHookProc^.VChannels[b].active));
-          if activeCount=0 then Chan2SquarewaveChange(silent);
+          {if no channels are active, THEN turn off speaker}
+          if activeCount=0 then begin
+            lastFreqWritten:=silent;
+            Chan2SquarewaveChange(lastFreqWritten);
+          end;
         end;
     end;
 
@@ -706,11 +721,13 @@ begin
   {$ELSE}
   assign(fhandle,'output.frq');
   {$ENDIF}
-  rewrite(fhandle);
+  rewrite(fhandle,1);
+  numwritten:=0;
 end;
 
 Destructor TPCSpeakerSimpleDW.Done;
 begin
+  blockwrite(fhandle,freqarray,numwritten*2);
   close(fhandle);
   Inherited Done;
 end;
@@ -727,55 +744,18 @@ end;
 
 Procedure TPCSpeakerSimpleDW.setAllChannels;
 var
-  b:byte;
   w:word;
-  activeCount:byte;
 begin
-  {$IFDEF CGA_PROFILE} asm MOV AL,tLightBlue; MOV DX,03D9h; OUT DX,AL; end; {$ENDIF}
-  {If we're here, we've got a new slice of virtual channel data to
-  translate into real channel data (ie. calcAllChannels has already run).
-  Use virtual channel data to set real hardware.}
+  {calc and set speaker}
+  Inherited setAllChannels;
 
-  {When equalShare set, every channel is set/unset.  When unset, sound is
-  only terminated if all channels are not active.}
-  if phookproc^.vchannels[dominantChannel].active
-    {set a "channel"}
-    then begin
-      w:=phookproc^.vchannels[dominantChannel].frequency;
-      Chan2SquarewaveChange(w);
-      {$IFDEF PITDIVS}
-      w:=PITFreq div w;
-      {$ENDIF}
-      write(fhandle,w);
-    end
-    {stop sounding a "channel"}
-    else begin
-      if equalShare
-        then begin
-          w:=silent;
-          Chan2SquarewaveChange(w);
-          {$IFDEF PITDIVS}
-          w:=PITFreq div w;
-          {$ENDIF}
-          write(fhandle,w);
-        end
-        else begin
-          activeCount:=0;
-          for b:=0 to pHookProc^.numVChannels-1 do inc(activeCount,byte(pHookProc^.VChannels[b].active));
-          if activeCount=0 then Chan2SquarewaveChange(silent);
-        end;
-    end;
-
-  {rotate the "active" voice for our poor little PC speaker}
-  inc(dominantChannel);
-  if (dominantChannel > (phookproc^.numVChannels-1))
-  or (phookproc^.tickCount=0) {This added so that new row forces retrigger.
-  Retrigger is necessary because, without it, sound output takes on a "swing"
-  tempo as some channels get more time and some get less}
-    then dominantChannel:=0;
-
-  {$IFDEF CGA_PROFILE} asm MOV AL,tBlack; MOV DX,03D9h; OUT DX,AL; end; {$ENDIF}
+  {Remember whatever was last sent to speaker}
+  w:=lastFreqWritten;
+  {$IFDEF PITDIVS}
+  w:=PITfreq div w;
+  {$ENDIF}
+  freqarray[numwritten]:=w;
+  inc(numwritten);
 end;
-
 
 end.
