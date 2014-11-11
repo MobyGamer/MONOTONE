@@ -65,7 +65,10 @@ type
   PSong=^TSong;
   TSong=object(TObject)
     currentLoc:LocationType; {song object is responsible for positioning}
-    currentOrder:integer; {which order we're currently playing/selected; integer because playengine can set to -1 for inc+}
+(*I don't think this is true, only row can be -1
+currentOrder:integer; {which order we're currently playing/selected; integer because playengine can set to -1 for inc+}
+*)
+    currentOrder:byte; {which order we're currently playing/selected; integer because playengine can set to -1 for inc+}
     Orders:Ordertype;  {which patterns to play, in order.  FF=stop playing}
     numTracks,
     numPatterns:byte;
@@ -507,6 +510,8 @@ begin
     Version:=MTV1SongVer;
     {fill orders with FF as that is the EOS marker}
     fillchar(PatternOrder,sizeof(PatternOrder),$ff);
+    {set first order to 00}
+    PatternOrder[0]:=0;
     totalPatterns:=1;
     totalTracks:=numTrk;
     CellSize:=2;
@@ -517,6 +522,8 @@ begin
   numPatterns:=1;
   (* sizeOfNoteEvent:=2; {size in bytes of note+effects+etc.} now a const *)
   fillchar(Orders,sizeof(Orders),$ff);
+  {set first order to 00}
+  Orders[0]:=0;
 
   AllocSongData; {uses numTracks,maxRows,sizeOfNoteEvent}
 end;

@@ -20,6 +20,10 @@ var
 
 begin
   oldma:=memavail;
+  if paramcount<>0 then begin
+    writeln('MONOTONE doesn''t take command-line arguments; just run the program.');
+    halt(1);
+  end;
 
   {$IFDEF DEBUG}
   new(mt,Init(generic,PIT,4));

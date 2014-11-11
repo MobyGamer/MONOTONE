@@ -616,6 +616,10 @@ var
     {$IFDEF CGA_PROFILE} asm MOV AL,tWhite; MOV DX,03D9h; OUT DX,AL; end; {$ENDIF}
   end;
 
+var
+  {added for debugging, should remove someday:}
+  b1,b2:byte;
+
 begin
   {$IFDEF CGA_PROFILE} asm MOV AL,tBrown; MOV DX,03D9h; OUT DX,AL; end; {$ENDIF}
   Inherited CalcAllChannels;
@@ -654,9 +658,13 @@ begin
           UpdateEffectsPerTick;
         end;
 
-        {a D00 on the last pattern can send us into neverland, so let's do
-        an additional check if we're at the end of the song and handle it}
-        if MySong^.Orders[MySong^.CurrentOrder]=$ff {end of song!} then begin
+        {A D00 on the last pattern can send us into neverland, so let's do
+        an additional check if we're at the end of the song and handle it.
+        FF in the order list means End Of Song}
+        if MySong^.Orders[MySong^.CurrentOrder]=$ff then begin
+        {b1:=MySong^.CurrentOrder;
+        b2:=MySong^.Orders[b1];
+        if b2=$ff then begin}
           dec(MySong^.CurrentOrder);
           songIP:=false;
           curAction:=pa_Stop;
