@@ -157,6 +157,7 @@ type
 {MONOTONE Version 1 file format specific stuff begins here -----------------}
 
 const
+  MTV1MinParmxx=0;  {minimum xx value an MTV1 file can have}
   MTV1MaxParmxx=63; {maximum xx value an MTV1 file can have, 6 bits}
   MTV1MaxParmxy=7;  {maximum xy (x or y) value an MTV1 file can have, 3 bits}
   MTV1VibTableSize=32; {size of vibrato table; must be power of 2}
@@ -554,7 +555,7 @@ var
   {This exists **only** to process **NON-Tick-0** effects.  Tick 0
   effects are handled in UpdateNotesPerRow}
   const
-    MinHz=20+MTV1MaxParmxx; {20 is lowest practical value; 31 is highest parameter value MTV1 file format can store}
+    MinHz=20+MTV1MinParmxx; {20 is lowest practical value; 31 is highest parameter value MTV1 file format can store}
     MaxHz=65535-MTV1MaxParmxx;
   var
     chloop:byte;

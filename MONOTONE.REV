@@ -2,7 +2,12 @@ Legend:
 + Added feature
 - Bugfix
 * Optimization or other Miscellany
-------------------------------------------------- 20080601: alpha 0.37
+------------------------------------------------- 20150223: alpha 0.37a
+
+  - Notes couldn't slide below 83 Hz.  (It was a typo, argh)
+  - Diskwriter had wrong text describing what it did.
+
+------------------------------------------------- 20141103: alpha 0.37
 
   - Diskwriter added for speaker output.  Compile with PITDEVS for PIT
     timer value output, or without for frequency output.  Writes to
@@ -11,7 +16,7 @@ Legend:
     ends (ie. does not loop) and start it playing very quickly after
     you load it, then exit monotone after playing.  The diskwriter
     is dumb and will write silence to the beginning and end of the data
-    so some binary trimming will be necessary.  I'll fix this later if
+    so some binary trimming will be necessary.  I may fix this later if
     anyone else in the world other than me wants to use this feature...
 
 ------------------------------------------------- 20080601: alpha 0.36

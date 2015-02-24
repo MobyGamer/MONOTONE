@@ -1,5 +1,7 @@
 unit mt_setup; {Asks the user what they want on startup}
 
+{$I MT_DEFS.INC}
+
 interface
 
 uses
@@ -25,10 +27,10 @@ const
 
   auds:AudioLabels=(
     (supported:true ;DescString:'8253 PIT:         Internal PC Speaker          1-4 voices'),
-    {$IFDEF PITDEVS}
-    (supported:true ;DescString:'8253 PIT diskwriter, PIT divisor values        1-4 voices'),
+    {$IFDEF PITDIVS}
+    (supported:true ;DescString:'8253 PIT:         PIT divisor diskwriter       1-4 voices'),
     {$ELSE}
-    (supported:true ;DescString:'8253 PIT diskwriter, frequency values          1-4 voices'),
+    (supported:true ;DescString:'8253 PIT:         Frequency value diskwriter   1-4 voices'),
     {$ENDIF}
     (supported:false;DescString:'CPU PIT EMU:      Internal PC Speaker            2 voices'),
     (supported:false;DescString:'CPU PIT EMU:      Internal PC Speaker            3 voices'),
