@@ -64,7 +64,7 @@ const
   what rate the output hardware is running at!}
 
 type
-  playerActions=(pa_Idle,pa_Stop,pa_PlayNote,pa_PlayPattern,pa_PlaySong);
+  playerActions=(pa_Idle,pa_Stop,pa_PlayNote,pa_PlayPattern,pa_PlaySongCur,pa_PlaySongTop);
 
   {
   This is the data structure that holds the basis of the emulated state
@@ -663,9 +663,6 @@ begin
         an additional check if we're at the end of the song and handle it.
         FF in the order list means End Of Song}
         if MySong^.Orders[MySong^.CurrentOrder]=$ff then begin
-        {b1:=MySong^.CurrentOrder;
-        b2:=MySong^.Orders[b1];
-        if b2=$ff then begin}
           dec(MySong^.CurrentOrder);
           songIP:=false;
           curAction:=pa_Stop;
@@ -673,11 +670,17 @@ begin
 
       end; {case pa_PlayPattern}
 
-      pa_PlaySong:begin
+      pa_PlaySongTop:begin
         SongIP:=true; {signal "song-playing" mode for the engine}
         MySong^.currentOrder:=0;
         MySong^.currentLoc.pattern:=MySong^.Orders[0];
         MySong^.currentLoc.row:=0;
+        tickCount:=Tempo;
+        curAction:=pa_PlayPattern; {start playing, and don't come back here}
+      end;
+      pa_PlaySongCur:begin
+        SongIP:=true; {signal "song-playing" mode for the engine}
+        with MySong^ do currentLoc.pattern:=Orders[currentOrder];
         tickCount:=Tempo;
         curAction:=pa_PlayPattern; {start playing, and don't come back here}
       end;

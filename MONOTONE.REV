@@ -2,6 +2,13 @@ Legend:
 + Added feature
 - Bugfix
 * Optimization or other Miscellany
+------------------------------------------------- 20150318: alpha 0.37b
+
+  + Changed how playing works.  Current mechanisms:
+               P: Loops current pattern
+          Ctrl-P: Plays entire song from where cursor is in order list
+    Shift-Ctrl-P: Plays entire song from the beginning
+
 ------------------------------------------------- 20150223: alpha 0.37a
 
   - Notes couldn't slide below 83 Hz.  (It was a typo, argh)

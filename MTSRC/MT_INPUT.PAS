@@ -130,7 +130,8 @@ const
     (act:savesong; cat:control; sDes:'SaveSong'; lDes:'Saves a song file to disk'),
 
     {playing}
-    (act:playsong; cat:control; sDes:'PlaySong'; lDes:'Play entire song from the beginning'),
+    (act:playsongtop; cat:control; sDes:'PlaySongTop'; lDes:'Play entire song from the beginning'),
+    (act:playsongcur; cat:control; sDes:'PlaySongCur'; lDes:'Play song from current location'),
     (act:playpattern; cat:control; sDes:'PlayPattern'; lDes:'Play entire pattern once, then stop'),
     (act:stopplaying; cat:control; sDes:'StopPlaying'; lDes:'Halts playback (ie. stops playing the song or pattern)'),
 

@@ -200,7 +200,7 @@ begin
       case descriptions[uloop].act of
         goTrackerScreen,goHelpScreen,goStatusScreen,
         noteOff,eraseNote,octaveup,octavedown,
-        playPattern,playSong,stopPlaying,mark,pastetrack,pastePattern,
+        playPattern,playSongTop,playSongCur,stopPlaying,mark,pastetrack,pastePattern,
         Enter,Erase,
         transup,transdown,
         loadsong,savesong,quit:begin
@@ -897,8 +897,11 @@ begin
         octavedown:ChangeDefaultOctave(-1);
         stopPlaying:MyPlayer^.Send(pa_Stop);
         playPattern:MyPlayer^.Send(pa_playpattern);
-        playSong:if MySong^.Orders[0]<>$FF {to prevent launching into outer space}
-          then MyPlayer^.Send(pa_playsong)
+        playSongTop:if MySong^.Orders[0]<>$FF {to prevent launching into outer space}
+          then MyPlayer^.Send(pa_playsongtop)
+          else MyPlayer^.Send(pa_playpattern);
+        playSongCur:if MySong^.Orders[0]<>$FF {to prevent launching into outer space}
+          then MyPlayer^.Send(pa_playsongcur)
           else MyPlayer^.Send(pa_playpattern);
         quit:begin
           {ask user if they really want to leave, for accidental presses}

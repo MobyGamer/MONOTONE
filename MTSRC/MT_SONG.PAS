@@ -65,9 +65,6 @@ type
   PSong=^TSong;
   TSong=object(TObject)
     currentLoc:LocationType; {song object is responsible for positioning}
-(*I don't think this is true, only row can be -1
-currentOrder:integer; {which order we're currently playing/selected; integer because playengine can set to -1 for inc+}
-*)
     currentOrder:byte; {which order we're currently playing/selected; integer because playengine can set to -1 for inc+}
     Orders:Ordertype;  {which patterns to play, in order.  FF=stop playing}
     numTracks,
