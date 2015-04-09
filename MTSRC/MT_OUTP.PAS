@@ -499,11 +499,18 @@ begin
 end;
 
 Procedure TYM3812.AdlibSet;
+const
+  maxAfreq=((65535 * 2) div 21);
 var
   f,period,octave:word;
+  templ:longint;
 begin
   {adapted from code originally written by Joe Snow}
-  period:=(freq * 21) shr 1;
+  {this ineffecient code courtesy of TP arithmetic overflow detection bug}
+  templ:=freq;
+  templ:=templ * 21;
+  templ:=templ div 2;
+  period:=templ;
   octave:=36;
   while (period>1023) do begin
     inc(octave,4);
@@ -744,6 +751,7 @@ end;
 
 Procedure TPCSpeakerSimpleDW.setAllChannels;
 var
+  l:longint;
   w:word;
 begin
   {calc and set speaker}
@@ -752,7 +760,9 @@ begin
   {Remember whatever was last sent to speaker}
   w:=lastFreqWritten;
   {$IFDEF PITDIVS}
-  w:=PITfreq div w;
+  {These shannigans to work around TP bug}
+  l:=PITfreq div w;
+  w:=word(l);
   {$ENDIF}
   freqarray[numwritten]:=w;
   inc(numwritten);
