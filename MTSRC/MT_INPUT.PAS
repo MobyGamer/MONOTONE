@@ -150,7 +150,8 @@ const
     (act:tc12; cat:control; sDes:'ToggleChannel12'; lDes:'Toggles the channel on/off (ie. solo)'),
 
     {misc}
-    (act:quit; cat:control; sDes:'Quit'; lDes:'Quits the program')
+    (act:quit; cat:control; sDes:'Quit'; lDes:'Quits the program'),
+	(act:writeout; cat:control; sDes:'WriteOut'; lDes:'Writes the note data to a dump file for efficient replay')
   );
 
 type

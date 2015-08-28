@@ -16,8 +16,11 @@ implementation
 uses
   strings;
 
-procedure intropic; external;
-{$L intropic.obj}
+{procedure intropic; external;
+{{$L intropic.obj}
+procedure intropic;
+begin
+end;
 
 const
   {random messages -- yes, I am childish.  To be displayed as such:
