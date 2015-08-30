@@ -54,6 +54,7 @@ type
     destructor Done; virtual;
 	
 	Function load(filename:string): Boolean;
+    Procedure WriteDumpFile(filename:string);
 
 	private
 
@@ -61,7 +62,7 @@ type
 
     Procedure InitPlaySubsystem; {initializes the player engine+output device subsystem}
     Procedure KillPlaySubsystem; {de-inits the player engine+output device subsystem}
-	Procedure WriteDumpFile(filename:string);
+    Procedure DumpSongData(filename:string);
   end;
 
   PTracker=^TTracker;
@@ -231,6 +232,19 @@ begin
   Dispose(MyPlayer,Done);
 end;
 
+Procedure TPlayer.DumpSongData;
+begin
+  MyOutput^.OpenDump(filename);
+
+  while MyPlayer^.curAction <> pa_Stop do
+  begin
+    MyPlayer^.calcAllChannels;
+    MyOutput^.dumpAllChannels;
+  end;
+  
+  MyOutput^.CloseDump;
+end;
+
 Procedure TPlayer.WriteDumpFile;
 var
   oldLooping:boolean;
@@ -257,13 +271,7 @@ begin
 	MyPlayer^.tickCount:=MyPlayer^.Tempo;}
 	MyPlayer^.Send(pa_playSongTop);
 	{Dump all song data}
-	MyOutput^.OpenDump(filename);
-	while MyPlayer^.curAction <> pa_Stop do
-	begin
-		MyPlayer^.calcAllChannels;
-		MyOutput^.dumpAllChannels;
-	end;
-	MyOutput^.CloseDump;
+	DumpSongData(filename);
 	
 	{Restore old song state}
 	MyPlayer^.looping         :=oldLooping;

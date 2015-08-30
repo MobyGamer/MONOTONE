@@ -21,9 +21,9 @@ var
   oldma:longint;
 
 begin
-  if paramcount <> 1 then
+  if paramcount < 1 then
   begin
-    writeln('Usage: MTPLAY <file.mon>');
+    writeln('Usage: MTPLAY <file.mon> [<output.pit>]');
 	halt(1);
   end;
   
@@ -35,13 +35,20 @@ begin
   new(mt,Init(askaudio,4));
   {$ENDIF}
   
-  writeln('Playing: ' + paramstr(1));
-  
   if mt^.load(paramstr(1)) then
   begin
-    mt^.MyPlayer^.Send(pa_playsongtop);
+    if (paramcount = 2) then
+    begin
+	  writeln('Converting ' + paramstr(1) + ' to ' + paramstr(2));
+	  mt^.WriteDumpFile(paramstr(2));
+	end
+	else
+	begin
+      writeln('Playing: ' + paramstr(1));
+      mt^.MyPlayer^.Send(pa_playsongtop);
   
-    repeat until keypressed or (mt^.MyPlayer^.curAction = pa_Stop);
+      repeat until keypressed or (mt^.MyPlayer^.curAction = pa_Stop);
+	end;
   end;
   
   dispose(mt,Done);
