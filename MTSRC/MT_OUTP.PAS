@@ -67,9 +67,12 @@ type
 
     Constructor Init(playerHookProc:PPlayerEngine);
     Destructor Done; virtual;
+    Procedure OpenDump(filename:string); virtual;
+    Procedure CloseDump; virtual;
     Procedure hookPlayer(pfreq:word); virtual; {Hook the player proc to fire at the specified frequency}
     Procedure unHookPlayer; virtual;
     Procedure setAllChannels; virtual; {calls player hook, then sets all the channels}
+    Procedure dumpAllChannels; virtual; {calls player hook, then dumps all the channels to file}
 
     private
 
@@ -92,10 +95,14 @@ type
 
     constructor Init(playerHookProc:PPlayerEngine;equal:boolean);
     destructor Done; virtual;
+    Procedure OpenDump(filename:string); virtual;
+    Procedure CloseDump; virtual;
     Procedure hookPlayer(pfreq:word); virtual; {Hook the player proc to fire at the specified frequency}
     Procedure unHookPlayer; virtual;
     Procedure setAllChannels; virtual; {calls player hook, then sets all the channels}
-
+    Procedure dumpAllChannels; virtual; {calls player hook, then dumps all the channels to file}
+	Procedure updateAllChannels;
+	
     private
 
     equalShare:boolean;
@@ -116,29 +123,22 @@ type
     My advice?  Don't use equalshare.  It's too "bubbly".}
     dominantChannel:byte; {see above; rotates on every tick}
     lastFreqWritten:word;
-  end;
-
-  {diskwriter version of speaker output device}
-  PPCSpeakerSimpleDW=^TPCSpeakerSimpleDW;
-  TPCSpeakerSimpleDW=object(TPCSpeakerSimple)
-    constructor Init(playerHookProc:PPlayerEngine;equal:boolean);
-    destructor Done; virtual;
-    Procedure hookPlayer(pfreq:word); virtual; {Hook the player proc to fire at the specified frequency}
-    Procedure unHookPlayer; virtual;
-    Procedure setAllChannels; virtual; {calls player hook, then sets all the channels}
-    private
+    {variables for dumping to file}
     fhandle:file;
     freqarray:array[0..31000] of word;
     numwritten:word;
-	end;
+  end;
 
   PYM3812=^TYM3812;
   TYM3812=object(TOutputDevice)
     constructor Init(playerHookProc:PPlayerEngine);
     destructor Done; virtual;
+    Procedure OpenDump(filename:string); virtual;
+    Procedure CloseDump; virtual;
     Procedure hookPlayer(pfreq:word); virtual; {Hook the player proc to fire at the specified frequency}
     Procedure unHookPlayer; virtual;
     Procedure setAllChannels; virtual; {calls player hook, then sets all the channels}
+	Procedure dumpAllChannels; virtual; {calls player hook, then dumps all the channels to file}
 
     private
 
@@ -151,9 +151,12 @@ type
   TSN76489=object(TOutputDevice)
     constructor Init(playerHookProc:PPlayerEngine);
     destructor Done; virtual;
+    Procedure OpenDump(filename:string); virtual;
+    Procedure CloseDump; virtual;
     Procedure hookPlayer(pfreq:word); virtual; {Hook the player proc to fire at the specified frequency}
     Procedure unHookPlayer; virtual;
     Procedure setAllChannels; virtual; {calls player hook, then sets all the channels}
+	Procedure dumpAllChannels; virtual; {calls player hook, then dumps all the channels to file}
 
     private
 
@@ -177,6 +180,8 @@ uses
 procedure PlayHandler; Interrupt;
 
 begin
+  OMasterDevice^.SetAllChannels;
+
   {update master count}
   inc(OMasterDevice^.CallCount);
   {update player hook count}
@@ -186,8 +191,6 @@ begin
     OMasterDevice^.PHookProc^.calcAllChannels;
     OMasterDevice^.PHookCount:=0;
   end;
-
-  OMasterDevice^.SetAllChannels;
 
   {$IFNDEF EVILINT} {We want to be nice, and will maintain the BIOS interrupt}
 
@@ -220,6 +223,16 @@ begin
   Inherited Done;
 end;
 
+Procedure TOutputDevice.OpenDump(filename:string);
+begin
+	Abstract;
+end;
+
+Procedure TOutputDevice.CloseDump;
+begin
+	Abstract;
+end;
+
 Procedure TOutputDevice.hookPlayer;
 begin
   Abstract;
@@ -233,6 +246,12 @@ end;
 Procedure TOutputDevice.setAllChannels;
 {This loops through the virtual channel data and uses it to set the
 physical hardware device.}
+begin
+  Abstract;
+end;
+
+Procedure TOutputDevice.dumpAllChannels;
+{This loops through the virtual channel data and uses it to write the raw data to a file.}
 begin
   Abstract;
 end;
@@ -254,9 +273,9 @@ begin
   {adjust player to never calculate more channels than we have slots for}
   if pHookProc^.numVChannels > numPhysicalChannels
     then pHookProc^.numVChannels := numPhysicalChannels;
+  OMasterDevice:=@Self;
   {Initialize PC speaker device}
   Chan2SquarewaveOn(20); {burp to let people know we initialized}
-  OMasterDevice:=@Self;
   lastFreqWritten:=$ffff;
 end;
 
@@ -264,6 +283,23 @@ Destructor TPCSpeakerSimple.Done;
 begin
   Chan2SquarewaveOFF;
   Inherited Done;
+end;
+
+Procedure TPCSpeakerSimple.OpenDump(filename:string);
+begin
+  {$IFDEF PITDIVS}
+  assign(fhandle,filename);
+  {$ELSE}
+  assign(fhandle,'output.frq');
+  {$ENDIF}
+  rewrite(fhandle,1);
+  numwritten:=0;
+end;
+
+Procedure TPCSpeakerSimple.CloseDump;
+begin
+  blockwrite(fhandle,freqarray,numwritten*2);
+  close(fhandle);
 end;
 
 Procedure TPCSpeakerSimple.hookPlayer;
@@ -283,12 +319,11 @@ begin
   CleanUpTimer;
 end;
 
-Procedure TPCSpeakerSimple.setAllChannels;
+Procedure TPCSpeakerSimple.updateAllChannels;
 var
   b:byte;
   activeCount:byte;
 begin
-  {$IFDEF CGA_PROFILE} asm MOV AL,tLightBlue; MOV DX,03D9h; OUT DX,AL; end; {$ENDIF}
   {If we're here, we've got a new slice of virtual channel data to
   translate into real channel data (ie. calcAllChannels has already run).
   Use virtual channel data to set real hardware.}
@@ -299,14 +334,12 @@ begin
     {set a "channel"}
     then begin
       lastFreqWritten:=phookproc^.vchannels[dominantChannel].frequency;
-      Chan2SquarewaveChange(lastFreqWritten);
     end
     {stop sounding a "channel"}
     else begin
       if equalShare
         then begin
           lastFreqWritten:=silent;
-          Chan2SquarewaveChange(lastFreqWritten);
         end
         else begin
           activeCount:=0;
@@ -315,7 +348,6 @@ begin
           {if no channels are active, THEN turn off speaker}
           if activeCount=0 then begin
             lastFreqWritten:=silent;
-            Chan2SquarewaveChange(lastFreqWritten);
           end;
         end;
     end;
@@ -327,8 +359,39 @@ begin
   Retrigger is necessary because, without it, sound output takes on a "swing"
   tempo as some channels get more time and some get less}
     then dominantChannel:=0;
+end;
+
+Procedure TPCSpeakerSimple.setAllChannels;
+var
+  b:byte;
+  activeCount:byte;
+begin
+  {$IFDEF CGA_PROFILE} asm MOV AL,tLightBlue; MOV DX,03D9h; OUT DX,AL; end; {$ENDIF}
+
+  {play previous note here, to minimize jitter}
+  Chan2SquarewaveChange(lastFreqWritten);
+
+  updateAllChannels;
 
   {$IFDEF CGA_PROFILE} asm MOV AL,tBlack; MOV DX,03D9h; OUT DX,AL; end; {$ENDIF}
+end;
+
+Procedure TPCSpeakerSimple.dumpAllChannels;
+var
+  l:longint;
+  w:word;
+begin
+  updateAllChannels;
+  
+  {Remember whatever was last sent to speaker}
+  w:=lastFreqWritten;
+  {$IFDEF PITDIVS}
+  {These shannigans to work around TP bug}
+  l:=PITfreq div w;
+  w:=word(l);
+  {$ENDIF}
+  freqarray[numwritten]:=w;
+  inc(numwritten);
 end;
 
 {-----}
@@ -431,6 +494,14 @@ begin
   {blank all registers, which effectively resets the card and stops producing output}
   for chan:= 1 to $F5 do WriteAdlib(chan,0); 
   Inherited Done;
+end;
+
+Procedure TYM3812.OpenDump(filename:string);
+begin
+end;
+
+Procedure TYM3812.CloseDump;
+begin
 end;
 
 Procedure TYM3812.WriteAdlib;
@@ -550,6 +621,11 @@ begin
   {$IFDEF CGA_PROFILE} asm MOV AL,tBlack; MOV DX,03D9h; OUT DX,AL; end; {$ENDIF}
 end;
 
+Procedure TYM3812.dumpAllChannels;
+begin
+end;
+
+
 {-----}
 
 {We're going to need some SN (tandy/pcjr) constants for this block:}
@@ -592,6 +668,14 @@ begin
     out SNMplxr,al
   end;
   Inherited Done;
+end;
+
+Procedure TSN76489.OpenDump(filename:string);
+begin
+end;
+
+Procedure TSN76489.CloseDump;
+begin
 end;
 
 Procedure TSN76489.PCjrSet;
@@ -719,53 +803,8 @@ begin
   {$IFDEF CGA_PROFILE} asm MOV AL,tBlack; MOV DX,03D9h; OUT DX,AL; end; {$ENDIF}
 end;
 
-
-Constructor TPCSpeakerSimpleDW.Init;
+Procedure TSN76489.dumpAllChannels;
 begin
-  Inherited Init(playerHookProc,equal);
-  {$IFDEF PITDIVS}
-  assign(fhandle,'output.pit');
-  {$ELSE}
-  assign(fhandle,'output.frq');
-  {$ENDIF}
-  rewrite(fhandle,1);
-  numwritten:=0;
-end;
-
-Destructor TPCSpeakerSimpleDW.Done;
-begin
-  blockwrite(fhandle,freqarray,numwritten*2);
-  close(fhandle);
-  Inherited Done;
-end;
-
-Procedure TPCSpeakerSimpleDW.hookPlayer;
-begin
-  Inherited hookPlayer(pfreq);
-end;
-
-Procedure TPCSpeakerSimpleDW.unHookPlayer;
-begin
-  Inherited unHookPlayer;
-end;
-
-Procedure TPCSpeakerSimpleDW.setAllChannels;
-var
-  l:longint;
-  w:word;
-begin
-  {calc and set speaker}
-  Inherited setAllChannels;
-
-  {Remember whatever was last sent to speaker}
-  w:=lastFreqWritten;
-  {$IFDEF PITDIVS}
-  {These shannigans to work around TP bug}
-  l:=PITfreq div w;
-  w:=word(l);
-  {$ENDIF}
-  freqarray[numwritten]:=w;
-  inc(numwritten);
 end;
 
 end.

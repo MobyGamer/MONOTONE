@@ -137,6 +137,7 @@ type
     tickCount:byte; {Local number of ticks we have processed}
     tempo:byte; {number of ticks to process before taking next action}
     curAction:playerActions;
+	looping:boolean;
 
     Constructor Init(theSong:PSong); {contains note data and number of tracks
     to process during each timeslice.  NumTracks is turned into numVChannels and
@@ -202,6 +203,9 @@ var
 
 begin
   Inherited Init;
+  
+  {We do not loop on Bxx commands in diskwriter mode}
+  looping:=true;
 
   {inherited Init should have set callcount and the rest to 0}
   mySong:=theSong;
@@ -319,6 +323,8 @@ begin
         patIP:=false;
         tickCount:=0;
         curAction:=pa_Idle;
+		{ Disable audio }
+		
       end;
 
       pa_PlayNote:begin
@@ -520,12 +526,22 @@ var
             inc(vibIndex,vibSpeed); vibIndex:=vibIndex AND (MTV1VibTableSize-1);
           end;
           $b:begin {B   Position Jump Bxx : songposition}
-            currentOrder:=parm1;
-            currentLoc.Row:=-1; {will get inc'd later}
-            if (currentOrder > numOrders) then CurrentOrder:=0;
-            ManualPatJump:=true;
-            {reposition pattern based on the above calcs}
-            currentLoc.pattern:=Orders[currentOrder];
+			if looping then
+			begin
+			  {Perform regular position jump}
+			  currentOrder:=parm1;
+              currentLoc.Row:=-1; {will get inc'd later}
+              if (currentOrder > numOrders) then CurrentOrder:=0;
+              ManualPatJump:=true;
+              {reposition pattern based on the above calcs}
+              currentLoc.pattern:=Orders[currentOrder];
+			end
+			else
+			begin
+			  {Stop playback here to avoid looping}
+	          songIP:=false;
+              curAction:=pa_Stop;
+			end;
           end;
           $d:begin {D   Pattern Break Dxx : break position in next patt}
             currentLoc.Row:=parm1 - 1; {-1 because will be inc'd later}

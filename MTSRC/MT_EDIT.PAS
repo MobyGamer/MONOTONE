@@ -40,9 +40,33 @@ type
     StatusArea, {status screen showing the freq/vol/eff of each track, debug info}
     PianoArea {screen where user can practice notes on the keyboard}
   );
+  
+  PPlayer=^TPlayer;
+  TPlayer=object(TObject)
+    MySong:PSong; {make sure you init as a descendant, like PMTSong}
+    {$IFNDEF DEBUG}
+    MyOutput:POutputDevice; {make sure to init as descendant, like PPCSpeakerSimple}
+    {$ENDIF}
+    MyPlayer:PPlayerEngine; {make sure ot init as descendant, like PMTV1Player}
+    Player:PPlayerEngine;
+	
+    constructor Init(device:audiochoices;numtracks:byte);
+    destructor Done; virtual;
+	
+	Function load(filename:string): Boolean;
+    Procedure WriteDumpFile(filename:string);
+
+	private
+
+    audioDevice:audiochoices;
+
+    Procedure InitPlaySubsystem; {initializes the player engine+output device subsystem}
+    Procedure KillPlaySubsystem; {de-inits the player engine+output device subsystem}
+    Procedure DumpSongData(filename:string);
+  end;
 
   PTracker=^TTracker;
-  TTracker=object(TObject)
+  TTracker=object(TPlayer)
     activeArea:areatype;
     activeScreen:PScreen;
     Clipboard:LocationType; {used to copy current loc in prep for pasting}
@@ -57,16 +81,9 @@ type
     NoteLabels:array [0..noteEnd] of noteLabelType; {label of each note}
     maxx,maxy:byte; {maximum x and y positions per physical screen}
     MyInput:PInput;
-    MySong:PSong; {make sure you init as a descendant, like PMTSong}
-    {$IFNDEF DEBUG}
-    MyOutput:POutputDevice; {make sure to init as descendant, like PPCSpeakerSimple}
-    {$ENDIF}
-    MyPlayer:PPlayerEngine; {make sure ot init as descendant, like PMTV1Player}
-    Player:PPlayerEngine;
     IntroScreen,TrackerScreen,HelpScreen,StatusScreen,PianoScreen:PScreen;
     idleevents:longint; {number of idle events in the editor}
     defaultoctave:shortint;
-    audioDevice:audiochoices;
     videoDevice:videochoices;
 
     {init note labels for use in the editor}
@@ -77,14 +94,14 @@ type
     Function PromptUser(statement:str80;yesno:boolean):str80;
     Procedure LoadSongPrompt;
     Procedure SaveSongPrompt;
+	Function WriteDumpPrompt:str80;
     Procedure EnterEffectPrompt;
     Procedure EnterOrderPrompt;
     Function GetString:str80;
     Procedure RepaintPatternDisplay(full:boolean); {if "full" then do static parts too}
     Procedure ChangeDefaultOctave(s:shortint); {alters default octave used in note entry}
     Procedure EnterNote(noteaction:useractions); {enters note at current songpos and moves downward}
-    Procedure InitPlaySubsystem; {initializes the player engine+output device subsystem}
-    Procedure KillPlaySubsystem; {de-inits the player engine+output device subsystem}
+    Procedure WriteDump;
   end;
 
 implementation
@@ -125,6 +142,148 @@ begin
   RightJustify:=maxx-length(s);
 end;
 
+{ --- TPlayer methods --- }
+
+Constructor TPlayer.Init;
+begin
+  Inherited Init;
+  
+  {Initialize our song data -- we only support one format in this version,
+  so that's why we're explicitly specifying the descendant.  Future versions
+  will be able to load/save other file formats so they will need to handle
+  this more gracefully...}
+  MySong:=new(PMTSong,init(numtracks));
+
+  {Now that we have song initialized, we can fire up player and output device.}
+  audioDevice:=device;
+  InitPlaySubsystem;
+end;
+
+Destructor TPlayer.Done;
+begin
+  KillPlaySubsystem;
+  Dispose(Mysong,Done);
+
+  Inherited Done;
+end;
+
+Function TPlayer.load;
+begin
+  load:=false;
+
+  if MySong^.load(filename) then
+  begin
+    {if song load was successful, re-init the playback subsystem because
+    the number of tracks may have changed!}
+    KillPlaySubsystem;
+    InitPlaySubsystem;
+	
+	load:=true;
+  end;
+end;
+
+Procedure TPlayer.InitPlaySubsystem;
+const
+  {error strings needed for this section}
+  es_OutputDeviceNotSupported:PChar=
+  'Output device not yet supported; re-run and pick another one?';
+
+begin
+  {init player, passing song to it so it knows what to play}
+  MyPlayer:=new(PMTV1Player,Init(MySong));
+  {$IFNDEF DEBUG}
+  {...then the output device, with a hook to the player}
+  case audioDevice of
+    PIT:begin
+(*      MyOutput:=new(PPCSpeakerSimple,Init(MyPlayer,true)); equalsharetru*)
+      MyOutput:=new(PPCSpeakerSimple,Init(MyPlayer,false));
+    end;
+    YM3812:begin
+      MyOutput:=new(PYM3812,Init(MyPlayer));
+    end;
+    SN76489:begin
+      MyOutput:=new(PSN76489,Init(MyPlayer));
+    end;
+    else begin
+      fatalerror(8,strpas(es_OutputDeviceNotSupported));
+    end;
+  end; {case}
+  (*
+  {OMasterDevice is called from interrupt handler and set to @Self on init.
+  Just in case that process fails, we can do it here, although clunky:}
+  OMasterDevice:=MyOutput;
+  *)
+
+  {Cross your fingers:}
+  MyOutput^.hookPlayer(playerTimeSliceFreq);
+  {$ENDIF}
+end;
+
+Procedure TPlayer.KillPlaySubSystem;
+begin
+  {stop the interrupt}
+  {$IFNDEF DEBUG}
+  MyOutput^.unHookPlayer;
+  {$ENDIF}
+  {order is important!}
+  {$IFNDEF DEBUG}
+  Dispose(MyOutput,Done);
+  {$ENDIF}
+  Dispose(MyPlayer,Done);
+end;
+
+Procedure TPlayer.DumpSongData;
+begin
+  MyOutput^.OpenDump(filename);
+
+  while MyPlayer^.curAction <> pa_Stop do
+  begin
+    MyPlayer^.calcAllChannels;
+    MyOutput^.dumpAllChannels;
+  end;
+  
+  MyOutput^.CloseDump;
+end;
+
+Procedure TPlayer.WriteDumpFile;
+var
+  oldLooping:boolean;
+  oldOrder:word;
+  oldRow:word;
+  oldTempo:word;
+begin
+  if filename<>'' then
+  begin
+    {Stop music}
+	MyPlayer^.Send(pa_Stop);
+    {Disable Interrupt}
+	MyOutput^.unHookPlayer;
+	{Save old song state}
+	oldLooping:=MyPlayer^.looping;
+	oldTempo  :=MyPlayer^.tickCount;
+	oldOrder  :=MySong^.currentOrder;
+    oldRow    :=MySong^.currentLoc.row;
+	{Disable looping and start from top}
+	MyPlayer^.looping:=false;
+	{MySong^.currentOrder      :=0;
+	MySong^.currentLoc.pattern:=MySong^.Orders[0];
+    MySong^.currentLoc.row    :=0;
+	MyPlayer^.tickCount:=MyPlayer^.Tempo;}
+	MyPlayer^.Send(pa_playSongTop);
+	{Dump all song data}
+	DumpSongData(filename);
+	
+	{Restore old song state}
+	MyPlayer^.looping         :=oldLooping;
+	MyPlayer^.tickCount       :=oldTempo;
+	MySong^.currentOrder      :=oldOrder;
+	MySong^.currentLoc.pattern:=MySong^.Orders[oldOrder];
+    MySong^.currentLoc.row    :=oldRow;
+    {Enable Interrupt}
+	MyOutput^.hookPlayer(playerTimeSliceFreq);
+  end;
+end;
+
 { --- TTracker methods --- }
 
 Constructor TTracker.Init;
@@ -132,7 +291,7 @@ var
   temps:str80;
   uloop:useractions;
 begin
-  Inherited Init;
+  Inherited Init(device,numtracks);
   {idleevents:=0; shouldn't be necessary because of inherited Init}
   PopulateNoteLabels;
   DefaultOctave:=3;
@@ -241,16 +400,6 @@ begin
   end;
 
   activeScreen:=IntroScreen;
-
-  {Initialize our song data -- we only support one format in this version,
-  so that's why we're explicitly specifying the descendant.  Future versions
-  will be able to load/save other file formats so they will need to handle
-  this more gracefully...}
-  MySong:=new(PMTSong,init(numtracks));
-
-  {Now that we have song initialized, we can fire up player and output device.}
-  audioDevice:=device;
-  InitPlaySubsystem;
 end;
 
 Destructor TTracker.Done;
@@ -259,9 +408,6 @@ var
   b:byte;
 {$ENDIF}
 begin
-  KillPlaySubsystem;
-  Dispose(Mysong,Done);
-
   Dispose(IntroScreen,Done);
   Dispose(TrackerScreen,Done);
   Dispose(HelpScreen,Done);
@@ -280,60 +426,6 @@ begin
   {$ENDIF}
 
   Inherited Done;
-end;
-
-Procedure TTracker.InitPlaySubsystem;
-const
-  {error strings needed for this section}
-  es_OutputDeviceNotSupported:PChar=
-  'Output device not yet supported; re-run and pick another one?';
-
-begin
-  {init player, passing song to it so it knows what to play}
-  MyPlayer:=new(PMTV1Player,Init(MySong));
-  {$IFNDEF DEBUG}
-  {...then the output device, with a hook to the player}
-  case audioDevice of
-    PIT:begin
-(*      MyOutput:=new(PPCSpeakerSimple,Init(MyPlayer,true)); equalsharetru*)
-      MyOutput:=new(PPCSpeakerSimple,Init(MyPlayer,false));
-    end;
-    PITDW:begin
-(*      MyOutput:=new(PPCSpeakerSimple,Init(MyPlayer,true)); equalsharetru*)
-      MyOutput:=new(PPCSpeakerSimpleDW,Init(MyPlayer,false));
-    end;
-    YM3812:begin
-      MyOutput:=new(PYM3812,Init(MyPlayer));
-    end;
-    SN76489:begin
-      MyOutput:=new(PSN76489,Init(MyPlayer));
-    end;
-    else begin
-      fatalerror(8,strpas(es_OutputDeviceNotSupported));
-    end;
-  end; {case}
-  (*
-  {OMasterDevice is called from interrupt handler and set to @Self on init.
-  Just in case that process fails, we can do it here, although clunky:}
-  OMasterDevice:=MyOutput;
-  *)
-
-  {Cross your fingers:}
-  MyOutput^.hookPlayer(playerTimeSliceFreq);
-  {$ENDIF}
-end;
-
-Procedure TTracker.KillPlaySubSystem;
-begin
-  {stop the interrupt}
-  {$IFNDEF DEBUG}
-  MyOutput^.unHookPlayer;
-  {$ENDIF}
-  {order is important!}
-  {$IFNDEF DEBUG}
-  Dispose(MyOutput,Done);
-  {$ENDIF}
-  Dispose(MyPlayer,Done);
 end;
 
 Procedure TTracker.PopulateNoteLabels;
@@ -461,6 +553,11 @@ begin
     else MySong^.filename:=st;
 end;
 
+Function TTracker.WriteDumpPrompt: str80;
+begin
+  WriteDumpPrompt:=PromptUser('Write dump to what filename?',false);
+end;
+
 Procedure TTracker.EnterEffectPrompt;
 var
   st:str80;
@@ -541,25 +638,35 @@ const
   leftborder=1; rightborder=1; cellwidth=8;
 
   tempbf:byte=0;
+  
+  inHandler:boolean=false;
 
 var
   {locations, sizes, etc.}
   style:boxtypes;
   starty,endy,startingx,rows,tracks,height:byte;
-  loop,track,trackend,startrow,b,b1,b2,oldx:byte;
+  loop,track,trackend,startrow,curRow,b,b1,b2,oldx:byte;
+  loc:locationtype;
+  curNote:pointer;
   temps:str40;
   w:word;
   strBaseP:pointer; {used to precalc location of temp string}
   sep:char; {vertical seperator for columns}
 begin
+  if inHandler then Exit;
+  
+  inHandler:=true;
+
   style:=thickhor;
   with TrackerScreen^ do begin
     {precalc here:}
+	loc:=MySong^.CurrentLoc;
     endy:=numrows-footersize; {leave room for window border}
     height:=((numrows-extraroom) div PatHeight) * PatHeight; {so we have even multiple of rows for nrows != power of 2}
     starty:=endy-PatHeight;
     state.cursorfollows:=false; HideCursor; {turn off cursor and don't follow it}
-    startrow:=MySong^.CurrentLoc.row;
+    curRow:=MySong^.CurrentLoc.row;
+	startRow:=curRow;
     if startrow<(PatHeight div 2) {lets cursor stay centered in pattern}
       then startrow:=0
       else dec(startrow,(PatHeight div 2));
@@ -602,18 +709,19 @@ begin
     {draw pattern display}
     moveto(leftborder,starty);
     state.cursorfollows:=true;
-
-    for loop:=startrow to (startrow+PatHeight-1) do begin
+	
+	for loc.row:=startrow to (startrow+PatHeight-1) do begin
       with MySong^ do begin
         {SaveState;} oldx:=State.x;
         {two printing routines, one for normal and one for special cases, for speed reasons}
-        if loop<>currentLoc.Row then begin
+        if loc.row<>curRow then begin
           {Build and display a regular, non-highlighted row}
           state.backfore:=normalRowCol;
           strBaseP:=@temps; {I hate dealing with Self pointer ;-}
-          temps:=ByteToHex(loop);
+          temps:=ByteToHex(loc.row);
           sep:=boxchars[style].ver;
-          for track:=0 to trackend do begin
+          for loc.track:=0 to trackend do begin
+		    curNote:=GetNotePtr(loc);
             {$IFDEF PROFILE} _LZTimerOn; {$ENDIF}
             {$IFNDEF OPT8088}
             temps:=temps+sep;
@@ -633,7 +741,7 @@ begin
             end;
             {$ENDIF}
             {$IFDEF PROFILE} _LZTimerOff; pslots[7]:=_LZTimerCount; {$ENDIF}
-            temps:=temps+notelabels[GetNoteAt(track,loop)];
+            temps:=temps+notelabels[GetNoteByPtr(curNote)];
             {$IFDEF PROFILE} _LZTimerOn; {$ENDIF}
             {$IFNDEF OPT8088}
             temps:=temps+#0;
@@ -654,7 +762,7 @@ begin
             {$ENDIF}
             {$IFDEF PROFILE} _LZTimerOff; pslots[8]:=_LZTimerCount; {$ENDIF}
             {$IFDEF PROFILE} _LZTimerOn; {$ENDIF}
-            w:=GetEffectAt(track,loop);
+            w:=GetEffectByPtr(curNote);
             {$IFDEF PROFILE} _LZTimerOff; pslots[1]:=_LZTimerCount; {$ENDIF}
             if w=0 {if effect empty, then dummy string}
               then begin
@@ -677,7 +785,7 @@ begin
                 {$ENDIF}
               end else begin {effect not empty; build effect string}
                 {$IFNDEF OPT8088}
-                w:=GetEffectAt(track,loop);
+                {w:=GetEffectByPtr(curNote);}
                 b1:=hi(w); b2:=lo(w);
                 temps:=temps+hexnybble[(b1 AND $0F)]+ByteToHex(b2);
                 {$ELSE}
@@ -713,19 +821,22 @@ begin
                   stosw         {store result to destination string}
                 end;
                 {$ENDIF}
-              end;
-          end;
+				
+			  end;
+              
+		    end;
           print(temps);
         end else begin
           {uncommon highlighted row:}
           state.backfore:=currentRowCol;
-          print(ByteToHex(loop));
-          for track:=0 to trackend do begin
-            if track=currentLoc.track
+          print(ByteToHex(loc.row));
+          for loc.track:=0 to trackend do begin
+            curNote:=GetNotePtr(loc);
+            if loc.track=currentLoc.track
               then state.backfore:=currentCellCol
               else state.backfore:=currentRowCol;
-            temps:=boxchars[style].ver+notelabels[GetNoteAt(track,loop)]+' ';
-            w:=GetEffectAt(track,loop);
+            temps:=boxchars[style].ver+notelabels[GetNoteByPtr(curNote)]+' ';
+            w:=GetEffectByPtr(curNote);
             if w=0 {if effect empty, then dummy string}
               then temps:=temps+'---'
               else begin {effect not empty; build effect string}
@@ -765,6 +876,8 @@ begin
     {update display}
     if activeArea in [TrackerArea,OrderArea] then Update;
   end;
+  
+  inHandler:=false;
 end;
 
 Procedure TTracker.ChangeDefaultOctave;
@@ -895,14 +1008,24 @@ begin
         end;
         octaveup:ChangeDefaultOctave(1);
         octavedown:ChangeDefaultOctave(-1);
-        stopPlaying:MyPlayer^.Send(pa_Stop);
+        stopPlaying:begin
+		  MyPlayer^.Send(pa_Stop);
+		end;
         playPattern:MyPlayer^.Send(pa_playpattern);
-        playSongTop:if MySong^.Orders[0]<>$FF {to prevent launching into outer space}
+        playSongTop:begin
+		  if MySong^.Orders[0]<>$FF {to prevent launching into outer space}
           then MyPlayer^.Send(pa_playsongtop)
           else MyPlayer^.Send(pa_playpattern);
-        playSongCur:if MySong^.Orders[0]<>$FF {to prevent launching into outer space}
+		end;
+        playSongCur:
+		begin
+		  if MySong^.Orders[0]<>$FF {to prevent launching into outer space}
           then MyPlayer^.Send(pa_playsongcur)
           else MyPlayer^.Send(pa_playpattern);
+		end;
+		writeOut:begin
+		  WriteDump;
+		end;
         quit:begin
           {ask user if they really want to leave, for accidental presses}
           foos:=PromptUser('Are you sure? (Y/N)',true);
@@ -1143,6 +1266,15 @@ begin
   repeat until myinput^.kb^.keypressed;
   activeScreen:=HelpScreen;
   activeScreen^.Show;
+end;
+
+Procedure TTracker.WriteDump;
+var
+  filename:str80;
+begin
+  filename:=WriteDumpPrompt;
+  if filename<>'' then
+	WriteDumpFile(filename);
 end;
 
 end.

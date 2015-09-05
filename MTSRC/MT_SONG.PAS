@@ -70,6 +70,7 @@ type
     numTracks,
     numPatterns:byte;
     dataSize:word; {size in bytes of raw song data portion}
+	sizeOfRow:word;
     sizeOfPattern:word;
     (* this was turned into a constant specific for each descendant because
     it's always a power of two; we miss out on a major optimization
@@ -106,18 +107,23 @@ type
     the start of the data to process; because song structure could
     change in the future (ie. more data than will fit into a single 64K
     segment, etc.)}
+	function GetNotePtr(loc:locationtype):pointer; virtual;
+	function GetNotePtrAbsolute(pattern,row,track:byte):pointer; virtual;
+	function GetNextRow(wp:pointer):pointer; virtual;
+	function GetNextNote(wp:pointer):pointer; virtual;
 
     {the get/set procedures act on the current pattern/row/track data}
     {"set" procedures perform validity checking}
     procedure SetNote(note:byte); virtual; {uses cur* vars to set}
     function  GetNote:byte; virtual; {uses cur* vars to locate}
-    function  GetNoteAt(track,row:byte):byte; {uses absolute track*row of
-    current pattern without disturbing current location; useful for pattern display}
+    function  GetNoteByPtr(wp:pointer):byte; virtual;
+    function  GetNoteByLoc(loc:locationtype):byte; virtual;
     function  GetNoteAbsolute(pattern,track,row:byte):byte; {useful for pattern manipulation}
     procedure SetEffect(effect, parm1, parm2:byte); virtual;
     function  GetEffect:word; virtual; {uses cur* vars; effect=hibyte (FF00),
     data=lobyte (00FF) as 0xxx0yyy for xy effects and 00xxxxxx for xx effects}
-    function  GetEffectAt(track,row:byte):word; {uses current pattern, used for pattern display}
+    function  GetEffectByPtr(wp:pointer):word; virtual;
+    function  GetEffectByLoc(loc:locationtype):word; virtual;
     function  GetEffectAbsolute(pattern,track,row:byte):word; {useful for pattern manipulation}
     procedure SetVolume(vol:byte); virtual; {for future use}
     function  GetVolume:byte; virtual; {for future use}
@@ -187,12 +193,18 @@ type
     Function Save(fname:string):boolean; virtual;
     Function GetCurRowPtr:pointer; virtual; {returns pointer to current row}
     Function GetCurNotePtr:pointer; virtual; {returns pointer to current note cell}
+	function GetNextRow(wp:pointer):pointer; virtual;
+	function GetNextNote(wp:pointer):pointer; virtual;
+	function GetNotePtr(loc:locationtype):pointer; virtual;
+	function GetNotePtrAbsolute(pattern,row,track:byte):pointer; virtual;
     Procedure SetTitle(newTitle:commenttype); virtual;
     Procedure SetComment(newComment:commenttype); virtual;
     procedure SetNote(note:byte); virtual; {uses cur* vars to set}
     function  GetNote:byte; virtual; {uses cur* vars to locate}
+    function  GetNoteByPtr(wp:pointer):byte; virtual;
     procedure SetEffect(effect, parm1, parm2:byte); virtual;
     function  GetEffect:word; virtual;
+    function  GetEffectByPtr(wp:pointer):word; virtual;
 
     private
     Procedure AllocSongData;
@@ -320,12 +332,37 @@ begin
   Abstract;
 end;
 
+function TSong.GetNotePtr;
+begin
+  Abstract;
+end;
+
+function TSong.GetNotePtrAbsolute;
+begin
+  Abstract;
+end;
+
+function TSong.GetNextRow;
+begin
+  Abstract;
+end;
+
+function TSong.GetNextNote;
+begin
+  Abstract;
+end;
+
 procedure TSong.SetNote;
 begin
   Abstract;
 end;
 
 function TSong.GetNote;
+begin
+  Abstract;
+end;
+
+function TSong.GetNoteByPtr;
 begin
   Abstract;
 end;
@@ -344,51 +381,36 @@ begin
   CurrentLoc:=temploc;
 end; *)
 
-function TSong.GetNoteAt;
-var
-  temptrack,temprow:shortint; {using these force the generation of moving a
-  single byte, as opposed to calling a generic move() library routine}
+function TSong.GetNoteByLoc;
 begin
-  temptrack:=CurrentLoc.track; temprow:=CurrentLoc.row;
-  {we need speed here, so we're going to trust the user (eep!)}
-  CurrentLoc.Track:=Track; CurrentLoc.Row:=Row;
-  GetNoteAt:=GetNote;
-  CurrentLoc.Track:=temptrack; CurrentLoc.Row:=temprow;
-end;
-
-function TSong.GetEffectAt;
-var
-  temptrack,temprow:shortint;
-begin
-  temptrack:=CurrentLoc.track; temprow:=CurrentLoc.row;
-  {we need speed here, so we're going to trust the user (eep!)}
-  CurrentLoc.Track:=Track; CurrentLoc.Row:=Row;
-  GetEffectAt:=GetEffect;
-  CurrentLoc.Track:=temptrack; CurrentLoc.Row:=temprow;
+  GetNoteByLoc:=GetNoteByPtr(GetNotePtr(loc));
 end;
 
 function TSong.GetNoteAbsolute;
 var
-  temploc:LocationType;
+  loc:locationtype;
 begin
-  temploc:=CurrentLoc;
-  MoveToPattern(pattern);
-  MoveToTrack(track);
-  MoveToRow(row);
-  GetNoteAbsolute:=GetNote;
-  CurrentLoc:=temploc;
+  loc.pattern:=pattern;
+  loc.row:=row;
+  loc.track:=track;
+
+  GetNoteAbsolute:=GetNoteByPtr(GetNotePtr(loc));
+end;
+
+function TSong.GetEffectByLoc;
+begin
+  GetEffectByLoc:=GetEffectByPtr(GetNotePtr(loc));
 end;
 
 function TSong.GetEffectAbsolute;
 var
-  temploc:LocationType;
+  loc:locationtype;
 begin
-  temploc:=CurrentLoc;
-  MoveToPattern(pattern);
-  MoveToTrack(track);
-  MoveToRow(row);
-  GetEffectAbsolute:=GetEffect;
-  CurrentLoc:=temploc;
+  loc.pattern:=pattern;
+  loc.row:=row;
+  loc.track:=track;
+
+  GetEffectAbsolute:=GetEffectByPtr(GetNotePtr(loc));
 end;
 
 procedure TSong.SetEffect;
@@ -397,6 +419,11 @@ begin
 end;
 
 function TSong.GetEffect;
+begin
+  Abstract;
+end;
+
+function TSong.GetEffectByPtr;
 begin
   Abstract;
 end;
@@ -467,7 +494,8 @@ var
   tw:word;
 
 begin
-  sizeOfPattern:=numTracks*maxRows*MTV1sizeOfNoteEvent;
+  sizeOfRow:=numTracks*MTV1SizeOfNoteEvent;
+  sizeOfPattern:=sizeOfRow*maxRows;
   {allocate enough ram to compose in.  This is the size of whatever is left
   (usually a 64K block on machines with 256K or more) minus header size,
   divided by number of patterns.}
@@ -611,16 +639,22 @@ end;
 
 Function TMTSong.GetCurNotePtr;
 var
-  p:pointer;
   curLoc:locationtype;
+begin
+  asm pushf; cli end; {nothing must alter the location vars while we're calculating}
+  curLoc:=CurrentLoc;
+  asm popf end; {we got what we want, interrupts can continue}
+  GetCurNotePtr:=GetNotePtr(curLoc);
+end;
+
+Function TMTSong.GetNotePtr;
+var
+  p:pointer;
 begin
   (* {point to current row} *)
   (* p:=GetCurRowPtr; *)
   (* It's too costly to be CALLing all the time! We have inlined instead. *)
   p:=data;
-  asm pushf; cli end; {nothing must alter the location vars while we're calculating}
-  curLoc:=CurrentLoc;
-  asm popf end; {we got what we want, interrupts can continue}
 (*
   {advance to correct pattern}
   inc(word(p),sizeOfPattern*curLoc.Pattern);
@@ -636,10 +670,31 @@ begin
     (MTV1sizeOfNoteEvent*curLoc.Track);
 *)
   inc(word(p),
-    (sizeOfPattern*curLoc.Pattern)+
-    (MTV1sizeOfNoteEvent*((numTracks*curLoc.Row)+curLoc.Track))
+    (sizeOfPattern*loc.Pattern)+
+    (sizeOfRow*loc.Row)+(MTV1sizeOfNoteEvent*loc.Track)
     );
-  GetCurNotePtr:=p;
+  GetNotePtr:=p;
+end;
+
+Function TMTSong.GetNotePtrAbsolute;
+var
+  loc:locationtype;
+begin
+  loc.pattern:=pattern;
+  loc.row:=row;
+  loc.track:=track;
+  
+  GetNotePtrAbsolute:=GetNotePtr(loc);
+end;
+
+function TMTSong.GetNextRow;
+begin
+  GetNextRow:=pointer(word(wp)+(sizeOfRow));
+end;
+
+function TMTSong.GetNextNote;
+begin
+  GetNextNote:=pointer(word(wp)+MTV1sizeOfNoteEvent);
 end;
 
 Procedure TMTSong.SetNote;
@@ -760,10 +815,12 @@ begin
 end;
 
 Function TMTSong.GetNote;
-var
-  wp:^word;
 begin
-  wp:=GetCurNotePtr;
+  GetNote:=GetNoteByPtr(GetCurNotePtr);
+end;
+
+Function TMTSong.GetNoteByPtr;
+begin
   asm
     les di,wp
     mov ax,es:[di]
@@ -773,6 +830,11 @@ begin
 end;
 
 Function TMTSong.GetEffect;
+begin
+  GetEffect:=GetEffectByPtr(GetCurNotePtr);
+end;
+
+Function TMTSong.GetEffectByPtr;
 {returns:
   effect=hibyte (FF00)
   data=lobyte   (00FF) as:
@@ -782,11 +844,9 @@ const
   effDataToVisual:array[0..7] of byte=
   ($0,$1,$2,$3,$4,$b,$d,$f);
 var
-  wp:pointer;
   te:byte;
   td:byte;
 begin
-  wp:=GetCurNotePtr;
   asm
     les di,wp
     mov ax,es:[di]             {ax= nnnnnnne eedddddd}
