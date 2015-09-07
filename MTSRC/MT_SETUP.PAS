@@ -32,7 +32,7 @@ const
     {$ELSE}
     (supported:true ;DescString:'8253 PIT:         Frequency value diskwriter   1-4 voices'),
     {$ENDIF}
-    (supported:false;DescString:'CPU PIT EMU:      Internal PC Speaker            2 voices'),
+    (supported:true ;DescString:'8253 PIT (240 Hz) Internal PC Speaker          1-4 voices'),
     (supported:false;DescString:'CPU PIT EMU:      Internal PC Speaker            3 voices'),
     (supported:false;DescString:'CPU PIT EMU:      Internal PC Speaker            4 voices'),
     (supported:true ;DescString:'TI SN76489:       IBM PCjr / Tandy 1000 series   3 voices+noise'),

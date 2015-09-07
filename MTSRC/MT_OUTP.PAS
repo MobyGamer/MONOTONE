@@ -90,7 +90,7 @@ type
     noteIntervalTimerPeriods:TNoteIntervalType;
     {holds timer period equivalents of all the interval frequencies}
 
-    constructor Init(playerHookProc:PPlayerEngine;equal:boolean);
+    constructor Init(playerHookProc:PPlayerEngine;equal:boolean;drivingFrequency:word);
     destructor Done; virtual;
     Procedure hookPlayer(pfreq:word); virtual; {Hook the player proc to fire at the specified frequency}
     Procedure unHookPlayer; virtual;
@@ -130,7 +130,13 @@ type
     fhandle:file;
     freqarray:array[0..31000] of word;
     numwritten:word;
-	end;
+  end;
+
+  {240Hz version of speaker output device}
+  PPCSpeaker240hz=^TPCSpeaker240hz;
+  TPCSpeaker240hz=object(TPCSpeakerSimple)
+    constructor Init(playerHookProc:PPlayerEngine;equal:boolean);
+  end;
 
   PYM3812=^TYM3812;
   TYM3812=object(TOutputDevice)
@@ -248,7 +254,7 @@ const
 begin
   Inherited Init(playerHookProc);
   {my stuff}
-  deviceIFreq:=60;
+  deviceIFreq:=drivingFrequency;
   equalShare:=equal;
   dominantChannel:=0;
   {adjust player to never calculate more channels than we have slots for}
@@ -722,7 +728,7 @@ end;
 
 Constructor TPCSpeakerSimpleDW.Init;
 begin
-  Inherited Init(playerHookProc,equal);
+  Inherited Init(playerHookProc,equal,60);
   {$IFDEF PITDIVS}
   assign(fhandle,'output.pit');
   {$ELSE}
@@ -766,6 +772,11 @@ begin
   {$ENDIF}
   freqarray[numwritten]:=w;
   inc(numwritten);
+end;
+
+Constructor TPCSpeaker240hz.Init;
+begin
+  Inherited Init(playerHookProc,equal,240);
 end;
 
 end.

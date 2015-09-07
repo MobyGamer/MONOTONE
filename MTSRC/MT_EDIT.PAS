@@ -295,12 +295,13 @@ begin
   {...then the output device, with a hook to the player}
   case audioDevice of
     PIT:begin
-(*      MyOutput:=new(PPCSpeakerSimple,Init(MyPlayer,true)); equalsharetru*)
-      MyOutput:=new(PPCSpeakerSimple,Init(MyPlayer,false));
+      MyOutput:=new(PPCSpeakerSimple,Init(MyPlayer,false,60)); {equalshare=false}
     end;
     PITDW:begin
-(*      MyOutput:=new(PPCSpeakerSimple,Init(MyPlayer,true)); equalsharetru*)
-      MyOutput:=new(PPCSpeakerSimpleDW,Init(MyPlayer,false));
+      MyOutput:=new(PPCSpeakerSimpleDW,Init(MyPlayer,false)); {equalshare=false}
+    end;
+    PIT240:begin
+      MyOutput:=new(PPCSpeaker240hz,Init(MyPlayer,false)); {equalshare=false}
     end;
     YM3812:begin
       MyOutput:=new(PYM3812,Init(MyPlayer));

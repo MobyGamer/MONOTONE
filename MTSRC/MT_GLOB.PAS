@@ -67,7 +67,7 @@ type
   );
 
   videochoices=(truecga,generic);
-  audiochoices=(PIT,PITDW,PIT2,PIT3,PIT4,SN76489,SAA_1099,AY_3_8910,YM3812,TANDYCOMBO);
+  audiochoices=(PIT,PITDW,PIT240,PIT3,PIT4,SN76489,SAA_1099,AY_3_8910,YM3812,TANDYCOMBO);
   str80=string[80];
   str40=string[40];
   str12=string[12];
