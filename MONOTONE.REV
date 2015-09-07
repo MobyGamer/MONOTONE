@@ -2,10 +2,6 @@ Legend:
 + Added feature
 - Bugfix
 * Optimization or other Miscellany
-------------------------------------------------- 20150423: alpha 0.37d
-
-  + Added 240Hz speaker replayer, as an experiment
-
 ------------------------------------------------- 20150318: alpha 0.37b
 
   + Changed how playing works.  Current mechanisms:
