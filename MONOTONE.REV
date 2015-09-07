@@ -2,6 +2,13 @@ Legend:
 + Added feature
 - Bugfix
 * Optimization or other Miscellany
+------------------------------------------------- 20150907: alpha 0.38
+
+  + Added diskwriter (hit CTRL-W to dump to a file)
+  - Fixed tracker screen so it plays properly
+  + Added .ASM replayer
+  All changes courtesy of Scali
+
 ------------------------------------------------- 20150318: alpha 0.37b
 
   + Changed how playing works.  Current mechanisms:
