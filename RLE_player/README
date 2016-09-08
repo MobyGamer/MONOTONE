@@ -1,0 +1,18 @@
+This is the replayer with RLE support I used in RATillery[1]. It is an adaptation
+of the PLAYER.ASM included with MONOTONE.
+
+Changes:
+ - RLE decompression
+ - Supports multiple songs
+ - Use NASM syntax
+
+API:
+ - playSong: Start playing song (AL = song_id, AH = loop?)
+ - stopSong: Stop current song
+ - muteSong: Mutes music if AL != 0 (useful to stop music during game effects)
+
+RLE compressor (pitcomp.c):
+ - Takes PIT files as dumped by CTRL+W from MONOTONE.
+
+
+[1] http://www.raphnet.net/programmation/ratillery/index_en.php
