@@ -8,8 +8,8 @@ copy mtconfig.pas mtsrc
 copy \compiled\mt.exe .
 copy \compiled\mtconfig.exe .
 copy \compiled\mt.map .
-del c:\temp\mt_a038.zip
-pkzip -es -P c:\temp\mt_a038.zip @manifest.txt
-copy c:\temp\mt_a038.zip .
+del c:\temp\mt_a038a.zip
+pkzip -es -P c:\temp\mt_a038a.zip @manifest.txt
+copy c:\temp\mt_a038a.zip .
 rem del mt.exe
 rem del mtconfig.exe

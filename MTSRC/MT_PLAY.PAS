@@ -570,6 +570,7 @@ var
   Procedure UpdateEffectsPerTick;
   {This exists **only** to process **NON-Tick-0** effects.  Tick 0
   effects are handled in UpdateNotesPerRow}
+  {TODO: minparmxx and maxparmxx not necessary?  Check and verify}
   const
     MinHz=20+MTV1MinParmxx; {20 is lowest practical value; 31 is highest parameter value MTV1 file format can store}
     MaxHz=65535-MTV1MaxParmxx;
@@ -597,10 +598,10 @@ var
             Frequency:=notesHz[noteInterval];
           end;
           $1:begin {1   Slide Up 1xx : upspeed}
-            if Frequency < MaxHz then inc(Frequency,parm1);
+            if Frequency+parm1 < MaxHz then inc(Frequency,parm1);
           end;
           $2:begin {2   Slide Down 2xx : downspeed}
-            if Frequency > MinHz then dec(Frequency,parm1);
+            if Frequency-parm1 > MinHz then dec(Frequency,parm1);
           end;
           $3:begin {3   Tone Portamento 3xx : up/down speed}
             if Frequency < portaStopHz then begin {are we under the target?}

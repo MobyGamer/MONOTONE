@@ -2,6 +2,15 @@ Legend:
 + Added feature
 - Bugfix
 * Optimization or other Miscellany
+------------------------------------------------- 20161205: alpha 0.38a
+
+  - Fixed note slide bug (notes could slide into oblivion)
+  + Added .ASM RLE replayer used in RATILLERY
+
+  * NOTE:  As the project is now in github, the practice of maintaining
+  this file stands a good chance of being abandoned.  Look to github for
+  revision history.
+
 ------------------------------------------------- 20150907: alpha 0.38
 
   + Added diskwriter (hit CTRL-W to dump to a file)
