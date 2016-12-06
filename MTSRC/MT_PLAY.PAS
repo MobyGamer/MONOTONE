@@ -576,6 +576,7 @@ var
     MaxHz=65535-MTV1MaxParmxx;
   var
     chloop:byte;
+    clampfreq:integer;
   begin
     {$IFDEF CGA_PROFILE} asm MOV AL,tYellow; MOV DX,03D9h; OUT DX,AL; end; {$ENDIF}
     for chloop:=0 to numVChannels-1 do begin
@@ -597,11 +598,24 @@ var
             end; {case}
             Frequency:=notesHz[noteInterval];
           end;
+          {Slide Up and Slide Down are less efficient than they could be
+          due to Frequency being an unsigned word, and needing to cast
+          to signed to perform clamping to avoid Turbo Pascal arithmetic
+          overflow errors.  A future rewrite should concentrate on
+          setting Frequency to a signed integer and testing.}
           $1:begin {1   Slide Up 1xx : upspeed}
-            if Frequency+parm1 < MaxHz then inc(Frequency,parm1);
+            clampfreq:=Frequency;
+            clampfreq:=clampfreq + parm1;
+            if clampfreq > MaxHz
+              then Frequency:=MaxHz
+              else Frequency:=clampfreq;
           end;
           $2:begin {2   Slide Down 2xx : downspeed}
-            if Frequency-parm1 > MinHz then dec(Frequency,parm1);
+            clampfreq:=Frequency;
+            clampfreq:=clampfreq - parm1;
+            if clampfreq < MinHz
+              then Frequency:=MinHz
+              else Frequency:=clampfreq;
           end;
           $3:begin {3   Tone Portamento 3xx : up/down speed}
             if Frequency < portaStopHz then begin {are we under the target?}

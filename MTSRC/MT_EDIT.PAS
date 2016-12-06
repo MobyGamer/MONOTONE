@@ -54,7 +54,9 @@ type
     destructor Done; virtual;
 	
 	Function load(filename:string): Boolean;
+    {$IFNDEF DEBUG}
     Procedure WriteDumpFile(filename:string);
+    {$ENDIF}
 
 	private
 
@@ -62,7 +64,9 @@ type
 
     Procedure InitPlaySubsystem; {initializes the player engine+output device subsystem}
     Procedure KillPlaySubsystem; {de-inits the player engine+output device subsystem}
+    {$IFNDEF DEBUG}
     Procedure DumpSongData(filename:string);
+    {$ENDIF}
   end;
 
   PTracker=^TTracker;
@@ -101,7 +105,9 @@ type
     Procedure RepaintPatternDisplay(full:boolean); {if "full" then do static parts too}
     Procedure ChangeDefaultOctave(s:shortint); {alters default octave used in note entry}
     Procedure EnterNote(noteaction:useractions); {enters note at current songpos and moves downward}
+    {$IFNDEF DEBUG}
     Procedure WriteDump;
+    {$ENDIF}
   end;
 
 implementation
@@ -232,6 +238,8 @@ begin
   Dispose(MyPlayer,Done);
 end;
 
+{Don't need file dumping when debugging the player}
+{$IFNDEF DEBUG}
 Procedure TPlayer.DumpSongData;
 begin
   MyOutput^.OpenDump(filename);
@@ -241,7 +249,7 @@ begin
     MyPlayer^.calcAllChannels;
     MyOutput^.dumpAllChannels;
   end;
-  
+
   MyOutput^.CloseDump;
 end;
 
@@ -283,6 +291,7 @@ begin
 	MyOutput^.hookPlayer(playerTimeSliceFreq);
   end;
 end;
+{$ENDIF}
 
 { --- TTracker methods --- }
 
@@ -1024,7 +1033,7 @@ begin
           else MyPlayer^.Send(pa_playpattern);
 		end;
 		writeOut:begin
-		  WriteDump;
+		  {$IFNDEF DEBUG}WriteDump;{$ENDIF}
 		end;
         quit:begin
           {ask user if they really want to leave, for accidental presses}
@@ -1268,6 +1277,7 @@ begin
   activeScreen^.Show;
 end;
 
+{$IFNDEF DEBUG}
 Procedure TTracker.WriteDump;
 var
   filename:str80;
@@ -1276,5 +1286,6 @@ begin
   if filename<>'' then
 	WriteDumpFile(filename);
 end;
+{$ENDIF}
 
 end.
