@@ -12,7 +12,7 @@ uses
   mt_setup;
 
 const
-  mtVersion=20161205;
+  mtVersion=20170708;
 
 var
   mt:PTracker;

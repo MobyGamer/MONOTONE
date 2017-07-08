@@ -55,8 +55,11 @@ begin
   for loop:=low(videochoices) to high(videochoices) do
     if vids[loop].supported then writeln(byte(loop),'. ',vids[loop].DescString);
   write('Your choice? ');
+  {$R-}
   loop:=videochoices(ord(readkeychar)-48);
   if loop>high(videochoices) then loop:=high(videochoices);
+  if loop<low(videochoices) then loop:=low(videochoices);
+  writeln('Using ',ord(loop));
   askvideo:=loop;
 end;
 
@@ -68,8 +71,11 @@ begin
   for loop:=low(audiochoices) to high(audiochoices) do
     if auds[loop].supported then writeln(byte(loop),'. ',auds[loop].DescString);
   write('Your choice? ');
+  {$R-}
   loop:=audiochoices(ord(readkeychar)-48);
   if loop>high(audiochoices) then loop:=high(audiochoices);
+  if loop<low(audiochoices) then loop:=low(audiochoices);
+  writeln('Using ',ord(loop));
   askaudio:=loop;
 end;
 
@@ -84,7 +90,7 @@ begin
   writeln(strpas(msg));
   write('How many tracks to start with? ');
   readln(b);
-  if b=0 then inc(b);
+  if b<0 then b:=1;
   if b>maxChannels then b:=maxChannels;
   asktrack:=b;
 end;
