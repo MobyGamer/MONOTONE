@@ -2,6 +2,10 @@ Legend:
 + Added feature
 - Bugfix
 * Optimization or other Miscellany
+------------------------------------------------- 20170708:
+
+  - Sanitized config user input
+
 ------------------------------------------------- 20161205: alpha 0.38a
 
   - Fixed note slide bug (notes could slide into oblivion)
