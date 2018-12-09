@@ -1,0 +1,95 @@
+
+Control Keys:
+-------------
+
+HelpScreen: F1 (Switches to a basic help screen)
+TrackerScreen: F2 (Switches to the main tracking screen)
+StatusScreen: F3 (Switches to a status/debugging screen)
+PlayerPiano: F4 (Displays a player piano to test note input/output)
+NextPattern: Ctrl+PgDn (Switches to the next pattern)
+PreviousPattern: Ctrl+PgUp (Switches to the previous pattern)
+NextArea: Tab (Moves to the next "window" or area on a screen)
+PrevArea: LShift+Tab (Moves to the previous "window" or area on a screen)
+OctaveUp: F10 (Raises the default octave)
+OctaveDown: F9 (Lowers the default octave)
+LoadSong: Ctrl+L (Loads a song file from disk)
+SaveSong: Ctrl+S (Saves a song file to disk)
+PlaySongTop: Ctrl+LShift+P (Play entire song from the beginning)
+PlaySongCur: Ctrl+P (Play song from current location)
+PlayPattern: P (Play entire pattern once, then stop)
+StopPlaying: SpaceBar (Halts playback (ie. stops playing the song or pattern))
+ToggleChannel1: Alt+1 (Toggles the channel on/off (ie. solo))
+ToggleChannel2: Alt+2 (Toggles the channel on/off (ie. solo))
+ToggleChannel3: Alt+3 (Toggles the channel on/off (ie. solo))
+ToggleChannel4: Alt+4 (Toggles the channel on/off (ie. solo))
+ToggleChannel5: Alt+5 (Toggles the channel on/off (ie. solo))
+ToggleChannel6: Alt+6 (Toggles the channel on/off (ie. solo))
+ToggleChannel7: Alt+7 (Toggles the channel on/off (ie. solo))
+ToggleChannel8: Alt+8 (Toggles the channel on/off (ie. solo))
+ToggleChannel9: Alt+9 (Toggles the channel on/off (ie. solo))
+ToggleChannel10: Alt+0 (Toggles the channel on/off (ie. solo))
+ToggleChannel11: Alt+- (Toggles the channel on/off (ie. solo))
+ToggleChannel12: Alt+= (Toggles the channel on/off (ie. solo))
+Quit: Esc (Quits the program)
+
+Editing Keys:
+-------------
+
+NoteOff: O (Enters an "OFF" mark (stops previous note from sounding))
+EraseNote: Del (Erases the note at cursor location)
+Enter: Enter (Enters a value at the cursor location)
+Erase: Ctrl+Enter (Erases the value at the cursor location)
+DeleteRow: LShift+Del (Deletes the row at the cursor location)
+InsertRow: LShift+Ins (Inserts a row at the cursor location)
+EraseTrack: Ctrl+E (Erases the current track, leaving the rest alone)
+SetMark: Alt+M (Marks the current track/pattern)
+SwapTrack: Alt+S (Swaps the marked track to the current track)
+PasteTrack: Alt+P (Pastes the marked track to the current track)
+PastePattern: Alt+Ctrl+P (Pastes the marked pattern to the current pattern)
+TransposeUp: Alt+Ctrl+= (Transposes entire track one note higher)
+TransposeDown: Alt+Ctrl+- (Transposes entire track one note lower)
+TransposeUpOctave: Alt+Ctrl+LShift+= (Transposes entire track one octave higher)
+TranposeDownOctave: Alt+Ctrl+LShift+- (Transposes entire track one octave lower)
+
+Piano (Note) Keys:
+-------------
+
+C-3: Z (Enters said note at the cursor location (lower octave))
+C#3: S (Enters said note at the cursor location (lower octave))
+D-3: X (Enters said note at the cursor location (lower octave))
+D#3: D (Enters said note at the cursor location (lower octave))
+E-3: C (Enters said note at the cursor location (lower octave))
+F-3: V (Enters said note at the cursor location (lower octave))
+F#3: G (Enters said note at the cursor location (lower octave))
+G-3: B (Enters said note at the cursor location (lower octave))
+G#3: H (Enters said note at the cursor location (lower octave))
+A-3: N (Enters said note at the cursor location (lower octave))
+A#3: J (Enters said note at the cursor location (lower octave))
+B-3: M (Enters said note at the cursor location (lower octave))
+C-4: Q (Enters said note at the cursor location (upper octave))
+C#4: 2 (Enters said note at the cursor location (upper octave))
+D-4: W (Enters said note at the cursor location (upper octave))
+D#4: 3 (Enters said note at the cursor location (upper octave))
+E-4: E (Enters said note at the cursor location (upper octave))
+F-4: R (Enters said note at the cursor location (upper octave))
+F#4: 5 (Enters said note at the cursor location (upper octave))
+G-4: T (Enters said note at the cursor location (upper octave))
+G#4: 6 (Enters said note at the cursor location (upper octave))
+A-4: Y (Enters said note at the cursor location (upper octave))
+A#4: 7 (Enters said note at the cursor location (upper octave))
+B-4: U (Enters said note at the cursor location (upper octave))
+
+Movement Keys:
+-------------
+
+MoveUp: Up (Cursor Movement)
+MoveDown: Down (Cursor Movement)
+MoveLeft: Left (Cursor Movement)
+MoveRight: Right (Cursor Movement)
+MoveTop: Home (Moves to top of pattern)
+MoveBottom: End (Moves to bottom of pattern)
+PageUp: PgUp (Moves up 16 rows)
+PageDown: PgDn (Moves down 16 rows)
+
+-------------
+
