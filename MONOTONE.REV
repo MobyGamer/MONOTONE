@@ -2,6 +2,10 @@ Legend:
 + Added feature
 - Bugfix
 * Optimization or other Miscellany
+------------------------------------------------- 20191009:
+
+  - Reduced memory usage by 62K when not using the diskwriter
+
 ------------------------------------------------- 20170708:
 
   - Sanitized config user input

@@ -47,7 +47,7 @@ type
     {$IFNDEF DEBUG}
     MyOutput:POutputDevice; {make sure to init as descendant, like PPCSpeakerSimple}
     {$ENDIF}
-    MyPlayer:PPlayerEngine; {make sure ot init as descendant, like PMTV1Player}
+    MyPlayer:PPlayerEngine; {make sure to init as descendant, like PMTV1Player}
     Player:PPlayerEngine;
 	
     constructor Init(device:audiochoices;numtracks:byte);
@@ -184,7 +184,7 @@ begin
     KillPlaySubsystem;
     InitPlaySubsystem;
 	
-	load:=true;
+    load:=true;
   end;
 end;
 
@@ -201,7 +201,7 @@ begin
   {...then the output device, with a hook to the player}
   case audioDevice of
     PIT:begin
-(*      MyOutput:=new(PPCSpeakerSimple,Init(MyPlayer,true)); equalsharetru*)
+(*      MyOutput:=new(PPCSpeakerSimple,Init(MyPlayer,true)); equalsharetrue*)
       MyOutput:=new(PPCSpeakerSimple,Init(MyPlayer,false));
     end;
     YM3812:begin
@@ -263,32 +263,32 @@ begin
   if filename<>'' then
   begin
     {Stop music}
-	MyPlayer^.Send(pa_Stop);
+    MyPlayer^.Send(pa_Stop);
     {Disable Interrupt}
-	MyOutput^.unHookPlayer;
-	{Save old song state}
-	oldLooping:=MyPlayer^.looping;
-	oldTempo  :=MyPlayer^.tickCount;
-	oldOrder  :=MySong^.currentOrder;
+    MyOutput^.unHookPlayer;
+    {Save old song state}
+    oldLooping:=MyPlayer^.looping;
+    oldTempo  :=MyPlayer^.tickCount;
+    oldOrder  :=MySong^.currentOrder;
     oldRow    :=MySong^.currentLoc.row;
-	{Disable looping and start from top}
-	MyPlayer^.looping:=false;
-	{MySong^.currentOrder      :=0;
-	MySong^.currentLoc.pattern:=MySong^.Orders[0];
+    {Disable looping and start from top}
+    MyPlayer^.looping:=false;
+    {MySong^.currentOrder      :=0;
+    MySong^.currentLoc.pattern:=MySong^.Orders[0];
     MySong^.currentLoc.row    :=0;
-	MyPlayer^.tickCount:=MyPlayer^.Tempo;}
-	MyPlayer^.Send(pa_playSongTop);
-	{Dump all song data}
-	DumpSongData(filename);
-	
-	{Restore old song state}
-	MyPlayer^.looping         :=oldLooping;
-	MyPlayer^.tickCount       :=oldTempo;
-	MySong^.currentOrder      :=oldOrder;
-	MySong^.currentLoc.pattern:=MySong^.Orders[oldOrder];
+    MyPlayer^.tickCount:=MyPlayer^.Tempo;}
+    MyPlayer^.Send(pa_playSongTop);
+    {Dump all song data}
+    DumpSongData(filename);
+
+    {Restore old song state}
+    MyPlayer^.looping         :=oldLooping;
+    MyPlayer^.tickCount       :=oldTempo;
+    MySong^.currentOrder      :=oldOrder;
+    MySong^.currentLoc.pattern:=MySong^.Orders[oldOrder];
     MySong^.currentLoc.row    :=oldRow;
     {Enable Interrupt}
-	MyOutput^.hookPlayer(playerTimeSliceFreq);
+    MyOutput^.hookPlayer(playerTimeSliceFreq);
   end;
 end;
 {$ENDIF}

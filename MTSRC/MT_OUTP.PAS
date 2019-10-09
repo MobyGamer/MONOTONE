@@ -81,6 +81,9 @@ type
     for CPU-emulated devices}
   end;
 
+  PFreqArray=^TFreqArray;
+  TFreqArray=array[0..31000] of word;
+
   {The idea behind the "multichannel" simple speaker output is that it is
   an arpeggiator -- that is, it rapidly (re)sets the speaker to all N
   channels in succession.  Anyone familiar with Neil Rubenking's
@@ -101,8 +104,8 @@ type
     Procedure unHookPlayer; virtual;
     Procedure setAllChannels; virtual; {calls player hook, then sets all the channels}
     Procedure dumpAllChannels; virtual; {calls player hook, then dumps all the channels to file}
-	Procedure updateAllChannels;
-	
+    Procedure updateAllChannels;
+
     private
 
     equalShare:boolean;
@@ -125,7 +128,7 @@ type
     lastFreqWritten:word;
     {variables for dumping to file}
     fhandle:file;
-    freqarray:array[0..31000] of word;
+    freqarray:pFreqArray;
     numwritten:word;
   end;
 
@@ -225,12 +228,12 @@ end;
 
 Procedure TOutputDevice.OpenDump(filename:string);
 begin
-	Abstract;
+  Abstract;
 end;
 
 Procedure TOutputDevice.CloseDump;
 begin
-	Abstract;
+  Abstract;
 end;
 
 Procedure TOutputDevice.hookPlayer;
@@ -266,7 +269,6 @@ const
   numPhysicalChannels=4;
 begin
   Inherited Init(playerHookProc);
-  {my stuff}
   deviceIFreq:=60;
   equalShare:=equal;
   dominantChannel:=0;
@@ -287,6 +289,7 @@ end;
 
 Procedure TPCSpeakerSimple.OpenDump(filename:string);
 begin
+  getmem(freqarray,sizeof(TFreqArray));
   {$IFDEF PITDIVS}
   assign(fhandle,filename);
   {$ELSE}
@@ -298,8 +301,9 @@ end;
 
 Procedure TPCSpeakerSimple.CloseDump;
 begin
-  blockwrite(fhandle,freqarray,numwritten*2);
+  blockwrite(fhandle,freqarray^,numwritten*2);
   close(fhandle);
+  freemem(freqarray,sizeof(tfreqarray));
 end;
 
 Procedure TPCSpeakerSimple.hookPlayer;
@@ -390,7 +394,7 @@ begin
   l:=PITfreq div w;
   w:=word(l);
   {$ENDIF}
-  freqarray[numwritten]:=w;
+  freqarray^[numwritten]:=w;
   inc(numwritten);
 end;
 
